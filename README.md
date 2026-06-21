@@ -51,20 +51,24 @@ driven by Claude Code hooks: each subagent start/stop updates `.claude/state/age
 which the dashboard polls. Open it in one window while you run work in another to watch the
 team light up.
 
-Use the **🎬 Office view** toggle (top of the page) to switch from cards to a **company floor
-plan**: the screen is laid out as an office building with one **department zone per role**
-(Executive, Management, Research, Design, Engineering, Review, Docs), each staffed with little
-**human figures** at desks with monitors — one person per live agent (or planned slot). They
-**type at the keyboard** while working (flickering screen), **pop a green ✓** when done, and
-**slump their head with floating z's** when idle or not staffed. Skin/hair vary per person so a
-3-person room looks like three people.
+Use the **🎬 Office view** toggle (top of the page) to switch from cards to a **pixel-style
+company floor plan**: a building with a **central corridor** (people stroll up and down it) and
+**department rooms on both sides** — each with a yellow name plaque, a window, a whiteboard, a
+plant, and **human figures** at desks. People **type** while working, **pop a green ✓** when
+done, and **doze with floating z's** when idle. Skin/hair/shirt vary per person.
 
-**Information handoffs are shown as people walking documents:** whenever an agent finishes (or
-the orchestrator delegates a task), a courier **walks across the office carrying a 📄** from the
-source zone to the destination, which flashes **📥 received** on arrival — so you can watch work
-move down the pipeline (orchestrator → research → design → implement → review → docs). Click
-**▶ Simulate handoffs** to play a scripted work cycle and see the couriers in motion without
-running real agents. The view choice persists and respects `prefers-reduced-motion`.
+**Information handoffs are shown as people walking documents:** a courier **carries a 📄 out into
+the corridor and over to another department**, which flashes **📥** on arrival.
+
+**The office animates by default — no button needed.** When no real workflow is running, the
+floor shows an ambient "busy office" loop with couriers continuously moving documents along the
+pipeline (orchestrator → research → design → implement → review → docs, plus reports back up).
+When a real workflow *is* running, the floor reflects live agent status and couriers fire on
+real handoffs. **⏸ Pause motion** freezes everything. The view choice persists and the whole
+thing respects `prefers-reduced-motion`.
+
+> Uses the *Press Start 2P* webfont for the pixel labels (loaded from Google Fonts; falls back
+> to a monospace font offline).
 
 ### Flexible headcount
 

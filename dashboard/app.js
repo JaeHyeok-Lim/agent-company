@@ -1,39 +1,50 @@
-// Renders the team in two views — Cards and Office (a floor plan with walking couriers).
-//   roster.json     : static character defs (avatar, traits, model)
-//   agents.json     : live per-instance status (multiple agents per role)
-//   allocation.json : planned headcount per role (chief-of-staff)
-// Office view = a fixed office floor plan; on each handoff (an agent finishes, or the
-// orchestrator delegates) a little person walks a document from one zone to another.
+// Two views — Cards and Office. The Office view is a top-down floor plan with a central
+// corridor; people sit at desks in department rooms, extras stroll the corridor, and on every
+// handoff a courier walks a document from one room to another (routed through the corridor).
+// The office ALWAYS animates by default; when a real workflow is active it reflects real state,
+// otherwise it runs an ambient "busy office" loop. The Pause button freezes all motion.
+//   roster.json / agents.json / allocation.json drive the data.
 const POLL_MS = 1500;
-const CAP = 12;       // max status dots in card view
-const CREW_CAP = 8;   // max avatars per role (card view)
-const ROOM_CREW = 4;  // max people drawn per zone (office view)
+const CAP = 12;
+const CREW_CAP = 8;
+const ROOM_CREW = 4;
 
 const grid = document.getElementById('grid');
 const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
-const simBtn = document.getElementById('simToggle');
+const pauseBtn = document.getElementById('simToggle');
 
-// fixed floor-plan zones, % of the plan (x,y = top-left, w,h)
+// floor-plan zones (% of plan): two columns flanking a central corridor at x≈45–55
 const ROOMS = {
-  orchestrator:     { x: 3,  y: 3,  w: 46, h: 20 },
-  'chief-of-staff': { x: 51, y: 3,  w: 46, h: 20 },
-  researcher:       { x: 3,  y: 26, w: 46, h: 21 },
-  architect:        { x: 51, y: 26, w: 46, h: 21 },
-  implementer:      { x: 3,  y: 50, w: 46, h: 21 },
-  reviewer:         { x: 51, y: 50, w: 46, h: 21 },
-  scribe:           { x: 3,  y: 74, w: 94, h: 22 },
+  orchestrator:     { x: 3,  y: 3,  w: 40, h: 22 },
+  researcher:       { x: 3,  y: 27, w: 40, h: 22 },
+  implementer:      { x: 3,  y: 51, w: 40, h: 22 },
+  scribe:           { x: 3,  y: 75, w: 40, h: 22 },
+  'chief-of-staff': { x: 57, y: 3,  w: 40, h: 22 },
+  architect:        { x: 57, y: 27, w: 40, h: 22 },
+  reviewer:         { x: 57, y: 51, w: 40, h: 22 },
 };
-// who hands off to whom (result flows down the pipeline; entry roles get tasks from the orchestrator)
+const LOUNGE = { x: 57, y: 75, w: 40, h: 22 };
+const CORRIDOR_X = 50; // center of the hallway, %
+
 const NEXT = { researcher: 'architect', architect: 'implementer', implementer: 'reviewer', reviewer: 'scribe', scribe: 'orchestrator', 'chief-of-staff': 'orchestrator' };
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
+// edges the ambient loop sends documents along (pipeline + reports + feedback)
+const EDGES = [
+  ['orchestrator', 'researcher'], ['orchestrator', 'chief-of-staff'],
+  ['researcher', 'architect'], ['architect', 'implementer'],
+  ['implementer', 'reviewer'], ['reviewer', 'scribe'],
+  ['scribe', 'orchestrator'], ['chief-of-staff', 'orchestrator'],
+  ['architect', 'researcher'], ['reviewer', 'implementer'],
+];
 
 let roster = {};
 let lastSig = '';
-let prevInst = null;          // id -> {role, status} from the previous render
+let prevInst = null;
 let floorBuilt = false;
 let courierLayer = null;
+let floorPlanEl = null;
 const roomEls = {};
 
 async function getJSON(url) {
@@ -44,6 +55,7 @@ async function getJSON(url) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ---- view toggle (persisted) ----
 function setView(v) {
@@ -54,7 +66,7 @@ function setView(v) {
 let initial = 'cards';
 try { initial = localStorage.getItem('agentView') || 'cards'; } catch { /* ignore */ }
 setView(initial);
-toggle.addEventListener('click', () => setView(document.body.dataset.view === 'office' ? 'cards' : 'office'));
+toggle.addEventListener('click', () => { setView(document.body.dataset.view === 'office' ? 'cards' : 'office'); tick(); });
 
 // ---- shared helpers ----
 function roleStatus(instances) {
@@ -73,7 +85,7 @@ function workerClass(status, calm) {
   return calm ? 'doze calm' : 'doze';
 }
 function workerBubble(w) {
-  if (w.status === 'working') return escapeHtml((w.task || 'working…').slice(0, 38));
+  if (w.status === 'working') return escapeHtml((w.task || 'working…').slice(0, 30));
   if (w.status === 'done') return 'done ✓';
   return 'z';
 }
@@ -138,6 +150,7 @@ function card(role, info, instances, planned) {
 // ---- office view: people ----
 const SKINS = ['#f1c9a5', '#e7b58f', '#d49a6a', '#a9744f', '#6f4a31'];
 const HAIRS = ['#2b2b2b', '#4a2f1d', '#6b4423', '#8a8a8a', '#1c1c1c', '#c9a24b'];
+const SHIRTS = ['#5b8def', '#16b1a6', '#f2a541', '#e5534b', '#7c5cff', '#4caf72'];
 function personSVG() {
   return `<svg class="person" viewBox="0 0 56 64" aria-hidden="true">
     <g class="head">
@@ -166,19 +179,50 @@ function workstation(info, w, calm, seed) {
     <div class="desk"></div>
   </div>`;
 }
+// a small standing/walking person (no desk) for the corridor + couriers
+function walkerSVG(shirt, skin, hair, withDoc) {
+  return `<svg viewBox="0 0 22 32" aria-hidden="true"><g class="cwalk">
+    <circle cx="11" cy="5.5" r="4" style="fill:${skin}"/>
+    <path d="M7 5.5 a4 4 0 0 1 8 0 z" style="fill:${hair}"/>
+    <rect x="6.5" y="10" width="9" height="11" rx="3" style="fill:${shirt}"/>
+    <rect class="leg-l" x="8" y="21" width="2.4" height="8" rx="1.2" style="fill:#3a4150"/>
+    <rect class="leg-r" x="11.6" y="21" width="2.4" height="8" rx="1.2" style="fill:#3a4150"/>
+    ${withDoc ? `<rect class="doc" x="7.5" y="13" width="7" height="9" rx="1"/>
+    <line class="docl" x1="9" y1="16" x2="13" y2="16"/><line class="docl" x1="9" y1="18.5" x2="13" y2="18.5"/>` : ''}
+  </g></svg>`;
+}
 
-// ---- office view: floor plan (built once, then updated in place) ----
+// ---- office view: floor plan (built once, updated in place) ----
 function buildFloorPlan() {
+  const roomDecor = '<div class="decor window"></div><div class="decor board"></div><div class="decor plant">🪴</div>';
   const rooms = Object.entries(roster)
     .filter(([role]) => ROOMS[role])
     .map(([role, info]) => {
       const R = ROOMS[role];
       return `<div class="room" id="room-${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
-        <div class="room-plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
+        ${roomDecor}
+        <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
         <div class="floor"></div>
       </div>`;
     }).join('');
-  office.innerHTML = `<div class="floor-plan">${rooms}<div class="couriers"></div></div>`;
+  // a decorative break-room / lounge
+  const lounge = `<div class="room lounge" style="left:${LOUNGE.x}%;top:${LOUNGE.y}%;width:${LOUNGE.w}%;height:${LOUNGE.h}%;--accent:#b98a5a">
+      <div class="plaque">☕ Lounge</div>
+      <div class="lounge-floor"><span>🛋️</span><span>🪴</span><span>☕</span><span>📺</span></div>
+    </div>`;
+  // central corridor with strolling people
+  const walkers = [
+    { d: 7.5, dl: 0, up: false },
+    { d: 9, dl: -3, up: true },
+    { d: 8.2, dl: -5, up: false },
+  ].map((wk, i) => {
+    const s = walkerSVG(SHIRTS[(i * 2) % SHIRTS.length], SKINS[(i + 1) % SKINS.length], HAIRS[i % HAIRS.length], false);
+    return `<div class="walker ${wk.up ? 'up' : ''}" style="animation-duration:${wk.d}s;animation-delay:${wk.dl}s;left:${42 + i * 6}%">${s}</div>`;
+  }).join('');
+  const corridor = `<div class="corridor">${walkers}</div>`;
+
+  office.innerHTML = `<div class="floor-plan">${corridor}${rooms}${lounge}<div class="couriers"></div></div>`;
+  floorPlanEl = office.querySelector('.floor-plan');
   courierLayer = office.querySelector('.couriers');
   for (const role of Object.keys(roster)) {
     const el = document.getElementById(`room-${role}`);
@@ -199,21 +243,7 @@ function updateRooms(entries) {
   }
 }
 
-// ---- couriers (document handoffs) ----
-function courierSVG() {
-  return `<svg viewBox="0 0 24 34" aria-hidden="true"><g class="cwalk">
-    <circle class="skin" cx="12" cy="6" r="4.3"/>
-    <path class="hair" d="M7.7 6 a4.3 4.3 0 0 1 8.6 0 z"/>
-    <rect class="shirt" x="7.5" y="10.5" width="9" height="11" rx="3"/>
-    <rect class="leg" x="9" y="21" width="2.6" height="8" rx="1.3"/>
-    <rect class="leg" x="12.4" y="21" width="2.6" height="8" rx="1.3"/>
-    <rect class="shirt" x="5" y="12.5" width="3.5" height="7" rx="1.7"/>
-    <rect class="shirt" x="15.5" y="12.5" width="3.5" height="7" rx="1.7"/>
-    <rect class="doc" x="8.5" y="14" width="7" height="9" rx="1"/>
-    <line class="docl" x1="10" y1="17" x2="14" y2="17"/>
-    <line class="docl" x1="10" y1="19.5" x2="14" y2="19.5"/>
-  </g></svg>`;
-}
+// ---- couriers (document handoffs), routed through the corridor ----
 function centerOf(role) {
   const R = ROOMS[role] || ROOMS.orchestrator;
   return { x: R.x + R.w / 2, y: R.y + R.h / 2 };
@@ -222,24 +252,29 @@ function receive(role) {
   const r = roomEls[role];
   if (!r) return;
   r.el.classList.remove('receiving');
-  r.el.getBoundingClientRect(); // force reflow so the flash animation restarts
+  r.el.getBoundingClientRect();
   r.el.classList.add('receiving');
   setTimeout(() => r.el.classList.remove('receiving'), 800);
 }
 function sendCourier(from, to) {
-  if (!courierLayer || !ROOMS[from] || !ROOMS[to]) return;
+  if (!courierLayer || paused || !ROOMS[from] || !ROOMS[to]) return;
+  if (courierLayer.childElementCount > 8) return; // don't flood
   const a = centerOf(from);
   const b = centerOf(to);
   const el = document.createElement('div');
   el.className = 'courier' + (b.x < a.x ? ' flip' : '');
-  el.innerHTML = courierSVG();
+  const seed = roleSeed(from) + roleSeed(to);
+  el.innerHTML = walkerSVG(SHIRTS[seed % SHIRTS.length], SKINS[seed % SKINS.length], HAIRS[seed % HAIRS.length], true);
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
-  const anim = el.animate(
-    [{ left: `${a.x}%`, top: `${a.y}%` }, { left: `${b.x}%`, top: `${b.y}%` }],
-    { duration: 2300, easing: 'ease-in-out', fill: 'forwards' }
-  );
+  // path: source -> hallway -> along hallway -> destination
+  const anim = el.animate([
+    { left: `${a.x}%`, top: `${a.y}%`, offset: 0 },
+    { left: `${CORRIDOR_X}%`, top: `${a.y}%`, offset: 0.28 },
+    { left: `${CORRIDOR_X}%`, top: `${b.y}%`, offset: 0.7 },
+    { left: `${b.x}%`, top: `${b.y}%`, offset: 1 },
+  ], { duration: 2800, easing: 'ease-in-out', fill: 'forwards' });
   anim.onfinish = () => {
     receive(to);
     const fade = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, fill: 'forwards' });
@@ -247,7 +282,7 @@ function sendCourier(from, to) {
   };
 }
 function diffHandoffs(prev, cur) {
-  if (prev === null) return; // skip first render
+  if (prev === null) return;
   const events = [];
   for (const id of Object.keys(cur)) {
     const c = cur[id];
@@ -266,7 +301,7 @@ function diffHandoffs(prev, cur) {
   }
 }
 
-// ---- render (cards + office), only rebuild on change so animations don't restart ----
+// ---- render ----
 function render(state, alloc) {
   const all = Object.values(state.instances || {});
   const plannedOf = (role) => {
@@ -288,56 +323,66 @@ function render(state, alloc) {
   const working = all.filter((x) => x.status === 'working').length;
   updated.textContent = state.updated
     ? `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`
-    : 'no activity yet — everyone idle';
+    : 'idle — ambient office running';
+}
+
+// ---- ambient "busy office" loop (default ON in office view) ----
+const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2 };
+let ambientOn = false;
+let ambientTimer = null;
+let paused = false;
+function ambientModel() {
+  const instances = {};
+  for (const [role, n] of Object.entries(AMBIENT_COUNT)) {
+    for (let i = 0; i < n; i++) instances[`amb-${role}-${i}`] = { role, status: 'working', task: `${role}` };
+  }
+  return { instances, updated: null };
+}
+function ambientStep() {
+  const [from, to] = pick(EDGES);
+  sendCourier(from, to);
+}
+function startAmbient() {
+  if (ambientOn || paused) return;
+  ambientOn = true;
+  lastSig = ''; prevInst = null; // suppress diff burst; couriers come from the timer
+  render(ambientModel(), { allocation: [] });
+  ambientStep();
+  ambientTimer = setInterval(ambientStep, 2300);
+}
+function stopAmbient() {
+  ambientOn = false;
+  clearInterval(ambientTimer);
+  ambientTimer = null;
 }
 
 async function tick() {
-  if (simOn) return; // simulation drives the render while on
   let state = { instances: {}, updated: null };
   let alloc = { allocation: [] };
-  try { state = await getJSON('/.claude/state/agents.json'); } catch { /* no activity yet */ }
-  try { alloc = await getJSON('/.claude/state/allocation.json'); } catch { /* no plan yet */ }
-  render(state, alloc);
+  try { state = await getJSON('/.claude/state/agents.json'); } catch { /* none */ }
+  try { alloc = await getJSON('/.claude/state/allocation.json'); } catch { /* none */ }
+  const active = Object.values(state.instances || {}).some((x) => x.status === 'working');
+  const inOffice = document.body.dataset.view === 'office';
+
+  // Idle + office view + not paused → keep the office alive with the ambient loop.
+  // Otherwise (a real workflow is active, or we're on cards, or paused) → show real state.
+  if (inOffice && !paused && !active) {
+    startAmbient();
+  } else {
+    stopAmbient();
+    render(state, alloc);
+  }
 }
 
-// ---- simulation: scripted handoff cycle so the motion is visible on demand ----
-const SIM_FLOW = [['researcher', 3], ['architect', 1], ['implementer', 2], ['reviewer', 2], ['scribe', 1]];
-let simOn = false;
-let simTimer = null;
-let simPhase = 0;
-function simModel(p) {
-  const instances = {};
-  for (let k = 0; k < SIM_FLOW.length; k++) {
-    const [role, count] = SIM_FLOW[k];
-    let status = null;
-    if (k < p) status = 'done';
-    else if (k === p) status = 'working';
-    else continue;
-    for (let i = 0; i < count; i++) instances[`sim-${role}-${i}`] = { role, status, task: `${role} task ${i + 1}` };
-  }
-  return { instances, updated: new Date().toISOString() };
+// ---- pause / resume all motion ----
+function setPaused(p) {
+  paused = p;
+  pauseBtn.textContent = p ? '▶ Resume motion' : '⏸ Pause motion';
+  if (floorPlanEl) floorPlanEl.classList.toggle('paused', p);
+  if (p) stopAmbient();
+  else tick();
 }
-function simAdvance() {
-  render(simModel(simPhase), { allocation: [] });
-  simPhase++;
-  if (simPhase > SIM_FLOW.length) { simPhase = 0; lastSig = ''; prevInst = {}; }
-}
-function startSim() {
-  simOn = true;
-  simBtn.textContent = '⏸ Stop simulation';
-  if (document.body.dataset.view !== 'office') setView('office');
-  lastSig = ''; prevInst = {}; simPhase = 0;
-  simAdvance();
-  simTimer = setInterval(simAdvance, 3200);
-}
-function stopSim() {
-  simOn = false;
-  simBtn.textContent = '▶ Simulate handoffs';
-  clearInterval(simTimer); simTimer = null;
-  lastSig = ''; prevInst = null;
-  tick();
-}
-simBtn.addEventListener('click', () => (simOn ? stopSim() : startSim()));
+pauseBtn.addEventListener('click', () => setPaused(!paused));
 
 // ---- boot ----
 try {

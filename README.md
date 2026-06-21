@@ -51,6 +51,11 @@ driven by Claude Code hooks: each subagent start/stop updates `.claude/state/age
 which the dashboard polls. Open it in one window while you run work in another to watch the
 team light up.
 
+Use the **🎬 Office view** toggle (top of the page) to switch from cards to an animated floor:
+each character **bobs and types** while working, **pops ✓** when done, and **dozes with floating
+z's** when idle or not staffed — so the team's activity reads at a glance. The choice persists,
+and it respects `prefers-reduced-motion`.
+
 ### Flexible headcount
 
 The **chief-of-staff** decides how many agents each role gets for a goal (0 when not needed,

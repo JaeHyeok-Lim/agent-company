@@ -6,18 +6,24 @@
   <title>agent-company · floor view</title>
   <link rel="stylesheet" href="/dashboard/styles.css" />
 </head>
-<body>
+<body data-view="cards">
   <header>
     <h1><span class="logo">🏢</span> agent-company</h1>
     <p class="sub">the multi-agent team — live floor view</p>
-    <p id="updated" class="updated">loading…</p>
+    <div class="controls">
+      <button id="viewToggle" class="toggle" type="button">🎬 Office view</button>
+      <span id="updated" class="updated">loading…</span>
+    </div>
   </header>
-  <main id="grid" class="grid"></main>
+  <main>
+    <section id="grid" class="grid"></section>
+    <section id="office" class="office"></section>
+  </main>
   <footer>
-    <span class="legend"><span class="dot idle"></span> idle</span>
+    <span class="legend"><span class="dot idle"></span> idle / dozing</span>
     <span class="legend"><span class="dot working"></span> working</span>
     <span class="legend"><span class="dot done"></span> done</span>
-    <span class="hint">status is driven by Claude Code hooks → <code>.claude/state/agents.json</code></span>
+    <span class="hint">status driven by Claude Code hooks → <code>.claude/state/agents.json</code></span>
   </footer>
   <script type="module" src="/dashboard/app.js"></script>
 </body>

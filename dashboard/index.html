@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>agent-company · floor view</title>
+  <link rel="stylesheet" href="/dashboard/styles.css" />
+</head>
+<body>
+  <header>
+    <h1><span class="logo">🏢</span> agent-company</h1>
+    <p class="sub">the multi-agent team — live floor view</p>
+    <p id="updated" class="updated">loading…</p>
+  </header>
+  <main id="grid" class="grid"></main>
+  <footer>
+    <span class="legend"><span class="dot idle"></span> idle</span>
+    <span class="legend"><span class="dot working"></span> working</span>
+    <span class="legend"><span class="dot done"></span> done</span>
+    <span class="hint">status is driven by Claude Code hooks → <code>.claude/state/agents.json</code></span>
+  </footer>
+  <script src="/dashboard/app.js"></script>
+</body>
+</html>

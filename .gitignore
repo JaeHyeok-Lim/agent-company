@@ -1,0 +1,17 @@
+# Claude Code local/session state
+.claude/settings.local.json
+
+# Live dashboard state (written by hooks at runtime)
+.claude/state/
+
+# Node (for the future TS SDK escalation path)
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db
+.DS_Store

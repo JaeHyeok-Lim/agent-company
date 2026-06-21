@@ -1,0 +1,11 @@
+{
+  "name": "agent-company",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "A reusable multi-agent company on Claude Code primitives, with a live character dashboard.",
+  "scripts": {
+    "dashboard": "node dashboard/serve.mjs"
+  },
+  "license": "MIT"
+}

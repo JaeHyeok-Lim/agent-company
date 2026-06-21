@@ -48,6 +48,11 @@ header .logo { font-size: 26px; }
   grid-column: 1 / -1;
   background: linear-gradient(180deg, #20243a, #191c2b);
 }
+.card.manager {
+  grid-column: 1 / -1;
+  background: linear-gradient(180deg, #211d33, #181626);
+}
+.card.manager .avatar { font-size: 26px; }
 
 .avatar {
   flex: 0 0 auto;

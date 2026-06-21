@@ -23,13 +23,15 @@ agent-company/
    ├─ settings.json          # permissions + hooks (hooks feed the dashboard)
    ├─ hooks/track-agent.mjs  # writes live agent status to state/agents.json
    ├─ agents/                # the "employees" — role-specialized subagents
+   │   ├─ chief-of-staff.md  # middle manager: status, scheduling, reporting up
    │   ├─ researcher.md
    │   ├─ architect.md
    │   ├─ implementer.md
    │   ├─ reviewer.md
    │   └─ scribe.md
    ├─ workflows/             # the "processes" — orchestration scripts
-   │   └─ build-feature.js
+   │   ├─ build-feature.js   # research → design → implement → review
+   │   └─ standup.js         # recon → chief-of-staff briefing
    └─ skills/                # the "manuals" — reusable capabilities
        └─ delivery-standards/SKILL.md
 ```

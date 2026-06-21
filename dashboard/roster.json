@@ -7,6 +7,14 @@
     "trait": "Decomposes the goal, delegates to specialists, and synthesizes. Owns the conclusion.",
     "boss": true
   },
+  "chief-of-staff": {
+    "name": "Chief of Staff",
+    "emoji": "📋",
+    "color": "#b07cff",
+    "model": "opus",
+    "trait": "Middle manager. Tracks status, organizes the backlog, sequences work, flags risks, and reports up.",
+    "manager": true
+  },
   "researcher": {
     "name": "Researcher",
     "emoji": "🔍",

@@ -23,7 +23,7 @@ function stateOf(state, role) {
 function card(role, info, st) {
   const status = st.status || 'idle';
   return `
-  <div class="card ${info.boss ? 'boss' : ''} status-${status}" style="--accent:${info.color}">
+  <div class="card ${info.boss ? 'boss' : ''} ${info.manager ? 'manager' : ''} status-${status}" style="--accent:${info.color}">
     <div class="avatar">${info.emoji}</div>
     <div class="body">
       <div class="name">${escapeHtml(info.name)} <span class="model">${escapeHtml(info.model)}</span></div>

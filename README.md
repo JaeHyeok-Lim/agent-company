@@ -51,12 +51,20 @@ driven by Claude Code hooks: each subagent start/stop updates `.claude/state/age
 which the dashboard polls. Open it in one window while you run work in another to watch the
 team light up.
 
-Use the **🎬 Office view** toggle (top of the page) to switch from cards to an **office floor**:
-each role is a department **room** (name plaque, window, carpet) staffed with little **human
-figures** at desks with monitors — one person per live agent (or planned slot). They **type at
-the keyboard** while working (with a flickering screen), **pop a green ✓** when done, and **slump
-their head with floating z's** when idle or not staffed. Skin/hair vary per person so a 3-person
-room looks like three people. The choice persists, and it respects `prefers-reduced-motion`.
+Use the **🎬 Office view** toggle (top of the page) to switch from cards to a **company floor
+plan**: the screen is laid out as an office building with one **department zone per role**
+(Executive, Management, Research, Design, Engineering, Review, Docs), each staffed with little
+**human figures** at desks with monitors — one person per live agent (or planned slot). They
+**type at the keyboard** while working (flickering screen), **pop a green ✓** when done, and
+**slump their head with floating z's** when idle or not staffed. Skin/hair vary per person so a
+3-person room looks like three people.
+
+**Information handoffs are shown as people walking documents:** whenever an agent finishes (or
+the orchestrator delegates a task), a courier **walks across the office carrying a 📄** from the
+source zone to the destination, which flashes **📥 received** on arrival — so you can watch work
+move down the pipeline (orchestrator → research → design → implement → review → docs). Click
+**▶ Simulate handoffs** to play a scripted work cycle and see the couriers in motion without
+running real agents. The view choice persists and respects `prefers-reduced-motion`.
 
 ### Flexible headcount
 

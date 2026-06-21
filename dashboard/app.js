@@ -104,14 +104,36 @@ function workerBubble(w) {
   if (w.status === 'done') return 'done ✓';
   return 'z';
 }
-function worker(info, w, calm) {
+// little human figure (front view, seated); shirt = role accent, skin/hair vary per person
+const SKINS = ['#f1c9a5', '#e7b58f', '#d49a6a', '#a9744f', '#6f4a31'];
+const HAIRS = ['#2b2b2b', '#4a2f1d', '#6b4423', '#8a8a8a', '#1c1c1c', '#c9a24b'];
+function personSVG() {
+  return `<svg class="person" viewBox="0 0 56 64" aria-hidden="true">
+    <g class="head">
+      <circle class="skin" cx="28" cy="15" r="9"/>
+      <path class="hair" d="M19 15 a9 9 0 0 1 18 0 z"/>
+      <circle class="eye" cx="25" cy="15" r="1.1"/>
+      <circle class="eye" cx="31" cy="15" r="1.1"/>
+    </g>
+    <path class="shirt torso" d="M16 50 q0 -16 12 -16 q12 0 12 16 z"/>
+    <rect class="shirt arm arm-l" x="14" y="36" width="6" height="16" rx="3"/>
+    <rect class="shirt arm arm-r" x="36" y="36" width="6" height="16" rx="3"/>
+    <circle class="skin hand" cx="17" cy="51" r="3"/>
+    <circle class="skin hand" cx="39" cy="51" r="3"/>
+  </svg>`;
+}
+function workstation(info, w, calm, seed) {
   const cls = workerClass(w.status, calm);
   const bubble = workerBubble(w);
-  return `<div class="worker ${cls}">
+  const skin = SKINS[seed % SKINS.length];
+  const hair = HAIRS[(seed * 3 + 1) % HAIRS.length];
+  return `<div class="workstation ${cls}" style="--skin:${skin};--hair:${hair}">
     <div class="bubble">${bubble}</div>
     <div class="zzz">z</div>
-    <div class="sprite">${info.emoji}</div>
-    <div class="typing"><span></span><span></span><span></span></div>
+    <div class="badge">✓</div>
+    ${personSVG()}
+    <div class="monitor"></div>
+    <div class="desk"></div>
   </div>`;
 }
 function podHead(instances, crewLen, planned) {
@@ -120,14 +142,20 @@ function podHead(instances, crewLen, planned) {
   if (planned > 0) return `×${planned}`;
   return '—';
 }
-function pod(role, info, instances, planned) {
+function roleSeed(role) {
+  let h = 0;
+  for (const ch of role) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return h % 97;
+}
+function room(role, info, instances, planned) {
   const calm = !!(info.boss || info.manager); // bosses rest, they don't snore
   const crew = crewFor(instances, planned);
   const head = podHead(instances, crew.length, planned);
+  const base = roleSeed(role);
   return `
-  <div class="pod ${info.boss ? 'boss' : ''} ${info.manager ? 'manager' : ''} ${planned === 0 ? 'unstaffed' : ''}" style="--accent:${info.color}">
-    <div class="pod-head"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount">${head}</span></div>
-    <div class="crew">${crew.map((w) => worker(info, w, calm)).join('')}</div>
+  <div class="room ${info.boss ? 'boss' : ''} ${info.manager ? 'manager' : ''} ${planned === 0 ? 'unstaffed' : ''}" style="--accent:${info.color}">
+    <div class="room-plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount">${head}</span></div>
+    <div class="floor">${crew.map((w, i) => workstation(info, w, calm, base + i)).join('')}</div>
   </div>`;
 }
 
@@ -144,7 +172,7 @@ function render(state, alloc) {
     `${role}:${inst.map((x) => x.status).join(',')}|${planned ?? '-'}`).join(';');
   if (sig !== lastSig) {
     grid.innerHTML = entries.map((e) => card(...e)).join('');
-    office.innerHTML = entries.map((e) => pod(...e)).join('');
+    office.innerHTML = entries.map((e) => room(...e)).join('');
     lastSig = sig;
   }
 

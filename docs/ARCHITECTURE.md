@@ -50,7 +50,25 @@ the user) — the orchestrator relays what matters.
 - `build-feature.js` — pipelines **research → design → implement → review**, with the review
   stage adversarially verifying before accepting.
 - `standup.js` — **recon → brief**: researcher gathers repo/team state, then the chief-of-staff
-  turns it into a decision-ready briefing for the user (and updates `docs/backlog.md`). Pipelines (no barrier between stages) are the
+  turns it into a decision-ready briefing for the user (and updates `docs/backlog.md`).
+- `staffed-build.js` — **staff → research → design → implement → review → document**: the
+  chief-of-staff first allocates headcount per role (0..N), then each phase fans out exactly
+  that many agents in parallel on their task slices. This is the flexible-headcount build.
+
+## Staffing (headcount allocation)
+
+Each function is **not** fixed at one agent. The chief-of-staff allocates headcount per role for
+a given goal:
+- **0** — role not needed (e.g. no docs to write → scribe 0).
+- **1** — needed, straightforward, single coherent piece.
+- **2–4** — large/parallelizable, bug-prone, or correctness-critical work, split into one task
+  slice per instance (e.g. 3 reviewers independently refuting a risky change; consensus wins).
+
+The plan is written to `.claude/state/allocation.json` (drives the dashboard's planned-count
+display) and `docs/staffing.md` (human-readable record). `staffed-build.js` consumes it and
+fans out per role via `parallel()`. Concurrency is capped (~16 agents at once) by the runtime;
+keep any single role ≤ ~4. The dashboard shows, per role: planned count (hollow dots), live
+instances (filled dots: working = pulsing amber, done = green), and a status badge. Pipelines (no barrier between stages) are the
 default; use a barrier only when a stage genuinely needs *all* prior results at once.
 
 Loop patterns to reuse (from `[[loop-engineering]]`): loop-until-dry (keep finding until

@@ -31,6 +31,7 @@ agent-company/
    │   └─ scribe.md
    ├─ workflows/             # the "processes" — orchestration scripts
    │   ├─ build-feature.js   # research → design → implement → review
+   │   ├─ staffed-build.js   # chief-of-staff allocates headcount, team fans out per role
    │   └─ standup.js         # recon → chief-of-staff briefing
    └─ skills/                # the "manuals" — reusable capabilities
        └─ delivery-standards/SKILL.md
@@ -43,10 +44,18 @@ npm run dashboard      # → http://localhost:4317/
 ```
 
 Shows the company as a floor of **character cards** — each role's avatar, personality,
-model tier, and **live status** (idle / working / done). Status is driven by Claude Code
-hooks: when the orchestrator delegates to a subagent, a hook writes to
-`.claude/state/agents.json`, which the dashboard polls. Open it in one window while you run
-work in another to watch the team light up.
+model tier, **headcount**, and **live status**. Per role you see the planned count (hollow
+dots, from the chief-of-staff's allocation) and live instances (filled dots: amber = working,
+green = done), so running multiple agents of one role shows up as multiple dots. Status is
+driven by Claude Code hooks: each subagent start/stop updates `.claude/state/agents.json`,
+which the dashboard polls. Open it in one window while you run work in another to watch the
+team light up.
+
+### Flexible headcount
+
+The **chief-of-staff** decides how many agents each role gets for a goal (0 when not needed,
+2–4 for large / bug-prone / correctness-critical work). Run it end-to-end with the
+`staffed-build` workflow — it staffs the goal, then fans out that many agents per phase.
 
 ## Quick start
 

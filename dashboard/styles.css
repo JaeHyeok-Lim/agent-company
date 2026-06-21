@@ -53,6 +53,23 @@ header .logo { font-size: 26px; }
   background: linear-gradient(180deg, #211d33, #181626);
 }
 .card.manager .avatar { font-size: 26px; }
+.card.unstaffed { opacity: .5; }
+
+.count {
+  margin-left: auto;
+  font-size: 11px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px;
+  white-space: nowrap;
+}
+.dots { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; align-items: center; }
+.idot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #3a4150; border: 1px solid var(--line);
+}
+.idot.working { background: #f5c451; border-color: #f5c451; animation: pulse 1.4s infinite; }
+.idot.done { background: #4caf72; border-color: #4caf72; }
+.idot.planned { background: transparent; border: 1px dashed color-mix(in srgb, var(--accent) 65%, #666); }
+.more { font-size: 11px; color: var(--muted); }
 
 .avatar {
   flex: 0 0 auto;

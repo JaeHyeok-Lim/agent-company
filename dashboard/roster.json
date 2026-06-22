@@ -64,5 +64,40 @@
     "color": "#9c6ade",
     "model": "opus",
     "trait": "Oversight (감사팀). Watches the whole system; critiques risks/inefficiencies and files improvement proposals."
+  },
+  "product-manager": {
+    "name": "Product",
+    "emoji": "🧭",
+    "color": "#ff8c42",
+    "model": "opus",
+    "trait": "Owns the what & why — problem, scope, success metrics, prioritized backlog."
+  },
+  "designer": {
+    "name": "Design",
+    "emoji": "🎨",
+    "color": "#ec407a",
+    "model": "opus",
+    "trait": "UX/UI — user flows, screens & states, interaction, usability."
+  },
+  "devops": {
+    "name": "DevOps",
+    "emoji": "🛠️",
+    "color": "#00bcd4",
+    "model": "opus",
+    "trait": "Ship & operate — CI/CD, deploy, infra, reliability & observability."
+  },
+  "data-analyst": {
+    "name": "Data",
+    "emoji": "📊",
+    "color": "#8bc34a",
+    "model": "sonnet",
+    "trait": "Metrics, analysis, and experiments — evidence-based decisions."
+  },
+  "security": {
+    "name": "Security",
+    "emoji": "🔒",
+    "color": "#ab47bc",
+    "model": "opus",
+    "trait": "AppSec — threat-models and reviews for vulnerabilities; reports with severity."
   }
 }

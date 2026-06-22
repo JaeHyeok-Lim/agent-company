@@ -148,7 +148,7 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 }
 .floor-plan {
   position: relative; flex: 1 1 640px; min-width: 0; max-width: 1120px;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 15;  /* taller: 7 rows of department rooms */
   background: repeating-linear-gradient(0deg, #1a1d27 0 28px, #1d212c 28px 56px), #14171f;
   border: 6px solid #0b0d12; border-radius: 10px; overflow: hidden;
   box-shadow: 0 0 0 3px #2a2f3c, inset 0 0 80px rgba(0, 0, 0, .5);

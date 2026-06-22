@@ -1,13 +1,18 @@
 export const meta = {
   name: 'go',
-  description: 'One command for everything — the chief-of-staff allocates headcount per role, then the whole team runs research → design → implement → review → document. Usage: /go <goal>',
+  description: 'One command for everything — the chief-of-staff allocates headcount per role, then the team runs define → research → UX → architecture → implement → ship → review → security → data → document. Usage: /go <goal>',
   phases: [
-    { title: 'Staff', detail: 'chief-of-staff decides headcount per role' },
-    { title: 'Research', detail: 'N researchers in parallel' },
-    { title: 'Design', detail: 'N architects in parallel' },
-    { title: 'Implement', detail: 'N implementers in parallel' },
-    { title: 'Review', detail: 'N reviewers in parallel (adversarial)' },
-    { title: 'Document', detail: 'N scribes in parallel' },
+    { title: 'Staff', detail: 'chief-of-staff decides headcount per role (0..N)' },
+    { title: 'Define', detail: 'product-manager: requirements, scope, success metrics' },
+    { title: 'Research', detail: 'researchers in parallel' },
+    { title: 'UX', detail: 'designers: user flow, screens, usability' },
+    { title: 'Architecture', detail: 'architects: technical design' },
+    { title: 'Implement', detail: 'implementers in parallel' },
+    { title: 'Ship', detail: 'devops: CI/CD, deploy, reliability' },
+    { title: 'Review', detail: 'reviewers (adversarial)' },
+    { title: 'Security', detail: 'security: threat-model + vulns' },
+    { title: 'Data', detail: 'data-analyst: metrics & experiments' },
+    { title: 'Document', detail: 'scribes in parallel' },
   ],
 }
 
@@ -35,15 +40,16 @@ const ALLOCATION = {
   required: ['allocation'],
 }
 
-// 1) Your command → the manager allocates headcount (this is the single entry point)
+// 1) Your command → the manager allocates headcount across ALL roles (0 where not needed)
 phase('Staff')
 const plan = await agent(
-  `Allocate headcount across the worker roles (researcher, architect, implementer, reviewer, ` +
-  `scribe) for this goal. Use 0 where a role isn't needed; allocate 2-4 where the work is large/` +
-  `parallelizable, bug-prone, or correctness-critical, and split it into one task slice per ` +
-  `instance. Persist the plan to .claude/state/allocation.json, docs/staffing.md, AND the shared ` +
-  `~/.claude/agent-company/allocation.json (create the dir if missing), and return the allocation.` +
-  `\n\nGoal:\n${goal}`,
+  `Allocate headcount across the worker roles (product-manager, researcher, designer, architect, ` +
+  `implementer, devops, reviewer, security, data-analyst, scribe) for this goal. Use 0 where a ` +
+  `role isn't needed (e.g. no UI → designer 0; no deploy → devops 0; internal tool → data 0). ` +
+  `Allocate 2-4 where the work is large/parallelizable, bug-prone, or correctness-critical, and ` +
+  `split it into one task slice per instance. Persist the plan to .claude/state/allocation.json, ` +
+  `docs/staffing.md, AND the shared ~/.claude/agent-company/allocation.json (create the dir if ` +
+  `missing), and return the allocation.\n\nGoal:\n${goal}`,
   { agentType: 'chief-of-staff', phase: 'Staff', schema: ALLOCATION },
 )
 
@@ -53,6 +59,7 @@ const tasksFor = (role, n) => {
   const t = slotFor(role)?.tasks || []
   return Array.from({ length: n }, (_, i) => t[i] || t[0] || goal)
 }
+const trim = (v, n) => (typeof v === 'string' ? v : JSON.stringify(v)).slice(0, n)
 
 // 2) The manager distributes: fan out `count` instances of a role on their task slices
 async function staff(role, phaseTitle, makePrompt) {
@@ -69,19 +76,34 @@ async function staff(role, phaseTitle, makePrompt) {
   return out.filter(Boolean)
 }
 
-const research = await staff('researcher', 'Research',
-  (t) => `Research for the goal. Your slice: ${t}\n\nGoal:\n${goal}`)
+const spec = await staff('product-manager', 'Define',
+  (t) => `Define requirements, scope (in/out), and success metrics for the goal. Slice: ${t}\n\nGoal:\n${goal}`)
 
-const design = await staff('architect', 'Design',
-  (t) => `Design the approach. Your slice: ${t}\n\nGoal:\n${goal}\n\nResearch:\n${JSON.stringify(research).slice(0, 6000)}`)
+const research = await staff('researcher', 'Research',
+  (t) => `Research for the goal. Slice: ${t}\n\nGoal:\n${goal}\n\nProduct brief:\n${trim(spec, 4000)}`)
+
+const ux = await staff('designer', 'UX',
+  (t) => `Design the user flow, screens & states, and interactions. Slice: ${t}\n\nGoal:\n${goal}\n\nBrief:\n${trim(spec, 3500)}`)
+
+const design = await staff('architect', 'Architecture',
+  (t) => `Design the technical approach. Slice: ${t}\n\nGoal:\n${goal}\n\nResearch:\n${trim(research, 3500)}\n\nUX:\n${trim(ux, 2500)}`)
 
 const built = await staff('implementer', 'Implement',
-  (t) => `Implement your slice and verify it runs. Slice: ${t}\n\nGoal:\n${goal}\n\nDesign:\n${String(design).slice(0, 6000)}`)
+  (t) => `Implement your slice and verify it runs. Slice: ${t}\n\nGoal:\n${goal}\n\nDesign:\n${trim(design, 4000)}`)
+
+const shipped = await staff('devops', 'Ship',
+  (t) => `Set up build/deploy/CI and reliability for the change. Slice: ${t}\n\nImplementation:\n${trim(built, 3000)}`)
 
 const review = await staff('reviewer', 'Review',
-  (t) => `Adversarially review the change — try to refute findings before reporting. Slice: ${t}\n\nImplementation:\n${String(built).slice(0, 6000)}`)
+  (t) => `Adversarially review the change — refute findings before reporting. Slice: ${t}\n\nImplementation:\n${trim(built, 4000)}`)
+
+const sec = await staff('security', 'Security',
+  (t) => `Threat-model and review for vulnerabilities (auth, input, secrets, deps). Slice: ${t}\n\nImplementation:\n${trim(built, 4000)}`)
+
+const data = await staff('data-analyst', 'Data',
+  (t) => `Define the metrics/events and any experiment to measure success. Slice: ${t}\n\nGoal:\n${goal}\n\nBrief:\n${trim(spec, 3000)}`)
 
 const docs = await staff('scribe', 'Document',
-  (t) => `Document the result for the next reader. Slice: ${t}\n\nGoal:\n${goal}\n\nBuilt:\n${String(built).slice(0, 6000)}`)
+  (t) => `Document the result for the next reader. Slice: ${t}\n\nGoal:\n${goal}\n\nBuilt:\n${trim(built, 4000)}`)
 
-return { goal, allocation: plan.allocation, research, design, built, review, docs }
+return { goal, allocation: plan.allocation, spec, research, ux, design, built, shipped, review, sec, data, docs }

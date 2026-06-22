@@ -44,6 +44,11 @@ the user) — the orchestrator relays what matters.
 | **reviewer** | "is this correct?" — review a diff, adversarially | Read, Grep, Glob, Bash | opus |
 | **scribe** | "document / capture what we learned" | Read, Grep, Glob, Write | sonnet |
 | **auditor** | "review the system itself" — oversight (감사팀); critiques risks/inefficiencies, files improvement proposals (read-only on the system, writes only to `docs/improvements/`) | Read, Grep, Glob, Bash, Write | opus |
+| **product-manager** | "what & why" — requirements, scope, success metrics, prioritized backlog (front of the pipeline) | Read, Grep, Glob, Write | opus |
+| **designer** | "UX/UI" — user flow, screens & states, interaction, usability | Read, Grep, Glob, Write | opus |
+| **devops** | "ship & operate" — CI/CD, deploy, infra, reliability/observability | Read, Edit, Write, Grep, Glob, Bash | opus |
+| **data-analyst** | "metrics, analysis, experiments" — evidence for decisions | Read, Grep, Glob, Bash, Write | sonnet |
+| **security** | "AppSec" — threat-model + vulnerability review with severity | Read, Grep, Glob, Bash | opus |
 
 ## Processes (workflows)
 

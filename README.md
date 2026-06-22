@@ -31,7 +31,12 @@ agent-company/
    │   ├─ implementer.md
    │   ├─ reviewer.md
    │   ├─ scribe.md
-   │   └─ auditor.md         # oversight (감사팀): critiques the system, files improvement proposals
+   │   ├─ auditor.md         # oversight (감사팀): critiques the system, files improvement proposals
+   │   ├─ product-manager.md # what & why: requirements, scope, success metrics
+   │   ├─ designer.md        # UX/UI: user flow, screens, usability
+   │   ├─ devops.md          # ship & operate: CI/CD, deploy, infra, reliability
+   │   ├─ data-analyst.md    # metrics, analysis, experiments
+   │   └─ security.md        # AppSec: threat-model + vulnerability review
    ├─ workflows/             # the "processes" — orchestration scripts
    │   ├─ build-feature.js   # research → design → implement → review
    │   ├─ staffed-build.js   # chief-of-staff allocates headcount, team fans out per role

@@ -30,11 +30,13 @@ agent-company/
    │   ├─ architect.md
    │   ├─ implementer.md
    │   ├─ reviewer.md
-   │   └─ scribe.md
+   │   ├─ scribe.md
+   │   └─ auditor.md         # oversight (감사팀): critiques the system, files improvement proposals
    ├─ workflows/             # the "processes" — orchestration scripts
    │   ├─ build-feature.js   # research → design → implement → review
    │   ├─ staffed-build.js   # chief-of-staff allocates headcount, team fans out per role
-   │   └─ standup.js         # recon → chief-of-staff briefing
+   │   ├─ standup.js         # recon → chief-of-staff briefing
+   │   └─ audit.js           # recon → auditor files improvement 결재 서류
    └─ skills/                # the "manuals" — reusable capabilities
        └─ delivery-standards/SKILL.md
 ```

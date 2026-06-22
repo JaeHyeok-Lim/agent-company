@@ -43,6 +43,7 @@ the user) — the orchestrator relays what matters.
 | **implementer** | "make the change" — write code + run it | Read, Edit, Write, Grep, Glob, Bash | opus |
 | **reviewer** | "is this correct?" — review a diff, adversarially | Read, Grep, Glob, Bash | opus |
 | **scribe** | "document / capture what we learned" | Read, Grep, Glob, Write | sonnet |
+| **auditor** | "review the system itself" — oversight (감사팀); critiques risks/inefficiencies, files improvement proposals (read-only on the system, writes only to `docs/improvements/`) | Read, Grep, Glob, Bash, Write | opus |
 
 ## Processes (workflows)
 
@@ -54,6 +55,9 @@ the user) — the orchestrator relays what matters.
 - `staffed-build.js` — **staff → research → design → implement → review → document**: the
   chief-of-staff first allocates headcount per role (0..N), then each phase fans out exactly
   that many agents in parallel on their task slices. This is the flexible-headcount build.
+- `audit.js` — **recon → audit**: researcher inventories the system, then the **auditor (감사팀)**
+  files improvement 결재 서류 into `docs/improvements/`. Oversight that improves the company
+  itself without touching running work.
 
 ## Staffing (headcount allocation)
 

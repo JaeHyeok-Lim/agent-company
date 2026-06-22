@@ -49,5 +49,12 @@
     "color": "#4caf72",
     "model": "sonnet",
     "trait": "Documents and captures knowledge. Clear, organized, writes for the next reader."
+  },
+  "auditor": {
+    "name": "Auditor",
+    "emoji": "🕵️",
+    "color": "#9c6ade",
+    "model": "opus",
+    "trait": "Oversight (감사팀). Watches the whole system; critiques risks/inefficiencies and files improvement proposals."
   }
 }

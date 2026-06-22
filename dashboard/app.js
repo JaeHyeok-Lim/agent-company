@@ -24,8 +24,8 @@ const ROOMS = {
   'chief-of-staff': { x: 57, y: 3,  w: 40, h: 22 },
   architect:        { x: 57, y: 27, w: 40, h: 22 },
   reviewer:         { x: 57, y: 51, w: 40, h: 22 },
+  auditor:          { x: 57, y: 75, w: 40, h: 22 },
 };
-const LOUNGE = { x: 57, y: 75, w: 40, h: 22 };
 
 const NEXT = { researcher: 'architect', architect: 'implementer', implementer: 'reviewer', reviewer: 'scribe', scribe: 'orchestrator', 'chief-of-staff': 'orchestrator' };
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
@@ -36,11 +36,13 @@ const EDGES = [
   ['implementer', 'reviewer'], ['reviewer', 'scribe'],
   ['scribe', 'orchestrator'], ['chief-of-staff', 'orchestrator'],
   ['architect', 'researcher'], ['reviewer', 'implementer'],
+  ['auditor', 'orchestrator'], ['orchestrator', 'auditor'],
 ];
 // department props (wall/shelf items) and floor textures, for the office look
 const PROPS = {
   orchestrator: '🏆 📊', 'chief-of-staff': '🗂️ 📋', researcher: '📚 🔍',
   architect: '📐 🖼️', implementer: '🖥️ 🔧', reviewer: '🛡️ ✅', scribe: '🗃️ 📄',
+  auditor: '🕵️ 📋',
 };
 const FLOORS = ['wood', 'tile', 'carpet'];
 // what each handoff is "about" — shown as a title on the flying paper airplane
@@ -55,6 +57,8 @@ const MESSAGES = {
   'scribe>orchestrator': 'docs',
   'chief-of-staff>orchestrator': 'status report',
   'architect>researcher': 'questions',
+  'auditor>orchestrator': '개선 결재',
+  'orchestrator>auditor': 'audit ask',
 };
 function messageTitle(from, to) { return MESSAGES[`${from}>${to}`] || 'memo'; }
 
@@ -235,11 +239,6 @@ function buildFloorPlan() {
         <div class="floor"></div>
       </div>`;
     }).join('');
-  // a decorative break-room / lounge
-  const lounge = `<div class="room lounge" style="left:${LOUNGE.x}%;top:${LOUNGE.y}%;width:${LOUNGE.w}%;height:${LOUNGE.h}%;--accent:#b98a5a">
-      <div class="plaque">☕ Lounge</div>
-      <div class="lounge-floor"><span>🛋️</span><span>🪴</span><span>☕</span><span>📺</span></div>
-    </div>`;
   // central corridor with strolling people
   const walkers = [
     { d: 7.5, dl: 0, up: false },
@@ -251,7 +250,7 @@ function buildFloorPlan() {
   }).join('');
   const corridor = `<div class="corridor">${walkers}</div>`;
 
-  office.innerHTML = `<div class="floor-plan">${corridor}${rooms}${lounge}<div class="couriers"></div></div>`;
+  office.innerHTML = `<div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>`;
   floorPlanEl = office.querySelector('.floor-plan');
   courierLayer = office.querySelector('.couriers');
   for (const role of Object.keys(roster)) {
@@ -398,7 +397,7 @@ function render(state, alloc) {
 }
 
 // ---- ambient "busy office" loop (default ON in office view) ----
-const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2 };
+const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2, auditor: 1 };
 const SAMPLE_TASKS = {
   orchestrator: ['plan', 'route'],
   'chief-of-staff': ['staffing', 'status'],
@@ -407,6 +406,7 @@ const SAMPLE_TASKS = {
   implementer: ['module A', 'endpoints', 'edge fix'],
   reviewer: ['review', 'edge cases', 'repro'],
   scribe: ['README', 'changelog'],
+  auditor: ['scan system', 'draft memo', 'risk check'],
 };
 let ambientOn = false;
 let ambientTimer = null;

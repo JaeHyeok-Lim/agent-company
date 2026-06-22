@@ -13,8 +13,7 @@ outcome-stated. The chief-of-staff updates this during a `standup` or when asked
   Code session. — owner: you
 
 ## Done
-- Bootstrap agent-company: 5 worker roles + chief-of-staff, build-feature & standup workflows,
-  delivery-standards skill, live dashboard, MCP config, public GitHub repo.
+- Bootstrap agent-company: 10 worker roles + chief-of-staff + auditor, 5 workflows (go, build-feature, staffed-build, standup, audit), delivery-standards skill, live dashboard, MCP config, public GitHub repo.
 
 ## Risks / blockers
 - (none open)

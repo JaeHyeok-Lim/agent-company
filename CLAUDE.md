@@ -12,8 +12,9 @@ deployable service is needed.
   specialist subagents, and synthesizes their outputs. It is also the only layer that runs
   `Workflow` scripts (subagents cannot spawn subagents).
 - **Employees** = `.claude/agents/*.md` — role-specialized subagent definitions
-  (researcher, architect, implementer, reviewer, scribe). Each is a custom `agentType`
-  invokable via the `Agent` tool or inside a workflow.
+  (product-manager, researcher, designer, architect, implementer, devops, reviewer, security,
+  data-analyst, scribe, plus chief-of-staff (manager) and auditor (oversight)). Each is a
+  custom `agentType` invokable via the `Agent` tool or inside a workflow.
 - **Processes** = `.claude/workflows/*.js` — deterministic orchestration scripts that
   fan out / pipeline employees across a task (e.g. research → design → implement → review).
 - **Manuals / capabilities** = `.claude/skills/*/SKILL.md` — reusable, on-demand expertise.

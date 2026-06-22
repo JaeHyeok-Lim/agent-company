@@ -16,8 +16,13 @@ _(none yet — run `staffed-build` or ask the chief-of-staff to staff a goal)_
 
 | Role | Count | Why | Slices |
 |---|---|---|---|
+| product-manager | – | – | – |
 | researcher | – | – | – |
+| designer | – | – | – |
 | architect | – | – | – |
 | implementer | – | – | – |
+| devops | – | – | – |
 | reviewer | – | – | – |
+| security | – | – | – |
+| data-analyst | – | – | – |
 | scribe | – | – | – |

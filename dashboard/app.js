@@ -390,9 +390,11 @@ function render(state, alloc) {
   }
 
   const working = all.filter((x) => x.status === 'working').length;
-  updated.textContent = state.updated
-    ? `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`
-    : (demoMode ? 'demo motion (no real work)' : 'idle — no active work');
+  let status;
+  if (state.updated) status = `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`;
+  else if (demoMode) status = 'demo motion (no real work)';
+  else status = 'idle — no active work';
+  updated.textContent = status;
 }
 
 // ---- ambient "busy office" loop (default ON in office view) ----
@@ -455,8 +457,8 @@ function stopAmbient() {
 async function tick() {
   let state = { instances: {}, updated: null };
   let alloc = { allocation: [] };
-  try { state = await getJSON('/.claude/state/agents.json'); } catch { /* none */ }
-  try { alloc = await getJSON('/.claude/state/allocation.json'); } catch { /* none */ }
+  try { state = await getJSON('/shared/agents.json'); } catch { /* none */ }
+  try { alloc = await getJSON('/shared/allocation.json'); } catch { /* none */ }
   const active = Object.values(state.instances || {}).some((x) => x.status === 'working');
   const inOffice = document.body.dataset.view === 'office';
 

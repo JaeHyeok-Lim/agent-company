@@ -99,8 +99,9 @@ npm run promote     # copies agents + workflows + skill into ~/.claude/
 Promotes the whole company to your user-level Claude config so the roles
 (`researcher`, `architect`, …) and workflows (`build-feature`, `staffed-build`,
 `standup`) are callable in **every** Claude Code project — no per-folder setup.
-(The live dashboard + hooks stay project-local; run `npm run dashboard` here to watch.)
-Re-run after editing `.claude/` to refresh the global copies.
+It also installs a **global hook** (`~/.claude/settings.json` → `~/.claude/agent-company/`)
+so the dashboard shows **real-time activity from any project** (open a new session for the
+hook to load). Run `npm run dashboard` here to watch; re-run `promote` after editing `.claude/`.
 
 ## Quick start
 

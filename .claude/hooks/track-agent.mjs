@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 // Live-state tracker for the agent-company dashboard.
-// Wired via Claude Code hooks in .claude/settings.json:
+// Writes `agents.json` NEXT TO THIS SCRIPT, so it works wherever it's installed.
+// `npm run promote` copies it to ~/.claude/agent-company/ and registers the hooks
+// in ~/.claude/settings.json — then EVERY project's subagent activity is captured
+// in one shared file that the dashboard reads (via the /shared route).
 //   PreToolUse (Task|Agent) -> "pre"  : a subagent starts -> add a working instance
-//   SubagentStop            -> "stop" : a subagent finishes -> mark oldest active instance done
-// Tracks PER-INSTANCE so multiple agents of the same role (headcount > 1) show individually.
-// Writes .claude/state/agents.json which the dashboard polls. Never blocks (always exit 0).
+//   SubagentStop            -> "stop" : a subagent finishes -> mark oldest active done
+// Never blocks the agent (always exit 0).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const mode = process.argv[2] || 'pre';
-const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const stateFile = join(projectDir, '.claude', 'state', 'agents.json');
+const here = dirname(fileURLToPath(import.meta.url));
+const stateFile = join(here, 'agents.json');
 const MAX_INSTANCES = 60;
 
 function readStdin() {
@@ -52,8 +55,6 @@ if (mode === 'pre') {
   state.active.push(id);
   prune(state);
 } else if (mode === 'stop') {
-  // v1 heuristic: SubagentStop doesn't carry the instance, so mark the oldest
-  // still-active instance done. Parallel agents may resolve out of order.
   const id = state.active.shift();
   if (id && state.instances[id]) {
     state.instances[id].status = 'done';

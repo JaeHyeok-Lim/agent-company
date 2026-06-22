@@ -4,8 +4,12 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join, extname, normalize, sep } from 'node:path';
+import { homedir } from 'node:os';
 
 const root = process.cwd();
+// global shared state written by the (global) hook — lets the dashboard show
+// real activity from ANY project, not just this folder
+const sharedDir = join(homedir(), '.claude', 'agent-company');
 const port = Number(process.env.PORT) || 4317;
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -19,6 +23,24 @@ const types = {
 createServer(async (req, res) => {
   let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
   if (urlPath === '/') urlPath = '/dashboard/index.html';
+
+  // /shared/<file> → the global shared state in ~/.claude/agent-company/
+  if (urlPath.startsWith('/shared/')) {
+    const shared = normalize(join(sharedDir, urlPath.slice('/shared/'.length)));
+    if (shared !== sharedDir && !shared.startsWith(sharedDir + sep)) {
+      res.writeHead(403); res.end('forbidden'); return;
+    }
+    try {
+      const data = await readFile(shared);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(data);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'no shared state yet', path: urlPath }));
+    }
+    return;
+  }
+
   const filePath = normalize(join(root, urlPath));
   // Prevent path traversal outside the project root.
   if (filePath !== root && !filePath.startsWith(root + sep)) {

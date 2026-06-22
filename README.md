@@ -57,8 +57,9 @@ company floor plan**: a building with a **central corridor** (people stroll up a
 plant, and **human figures** at desks. People **type** while working, **pop a green ✓** when
 done, and **doze with floating z's** when idle. Skin/hair/shirt vary per person.
 
-**Information handoffs are shown as people walking documents:** a courier **carries a 📄 out into
-the corridor and over to another department**, which flashes **📥** on arrival.
+**Information handoffs fly as paper airplanes:** on each handoff a **paper airplane ✈️ arcs from
+one department to another** (nose pointed at its target), and the destination flashes **📥** on
+arrival. Rooms have per-department props and varied floor textures (wood / tile / carpet).
 
 **The office animates by default — no button needed.** When no real workflow is running, the
 floor shows an ambient "busy office" loop with couriers continuously moving documents along the

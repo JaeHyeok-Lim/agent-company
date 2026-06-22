@@ -1,6 +1,6 @@
 // Two views — Cards and Office. The Office view is a top-down floor plan with a central
 // corridor; people sit at desks in department rooms, extras stroll the corridor, and on every
-// handoff a courier walks a document from one room to another (routed through the corridor).
+// handoff a paper airplane flies a message from one department to another.
 // The office ALWAYS animates by default; when a real workflow is active it reflects real state,
 // otherwise it runs an ambient "busy office" loop. The Pause button freezes all motion.
 //   roster.json / agents.json / allocation.json drive the data.
@@ -26,7 +26,6 @@ const ROOMS = {
   reviewer:         { x: 57, y: 51, w: 40, h: 22 },
 };
 const LOUNGE = { x: 57, y: 75, w: 40, h: 22 };
-const CORRIDOR_X = 50; // center of the hallway, %
 
 const NEXT = { researcher: 'architect', architect: 'implementer', implementer: 'reviewer', reviewer: 'scribe', scribe: 'orchestrator', 'chief-of-staff': 'orchestrator' };
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
@@ -38,6 +37,12 @@ const EDGES = [
   ['scribe', 'orchestrator'], ['chief-of-staff', 'orchestrator'],
   ['architect', 'researcher'], ['reviewer', 'implementer'],
 ];
+// department props (wall/shelf items) and floor textures, for the office look
+const PROPS = {
+  orchestrator: '🏆 📊', 'chief-of-staff': '🗂️ 📋', researcher: '📚 🔍',
+  architect: '📐 🖼️', implementer: '🖥️ 🔧', reviewer: '🛡️ ✅', scribe: '🗃️ 📄',
+};
+const FLOORS = ['wood', 'tile', 'carpet'];
 
 let roster = {};
 let lastSig = '';
@@ -192,6 +197,15 @@ function walkerSVG(shirt, skin, hair, withDoc) {
   </g></svg>`;
 }
 
+// a paper airplane (points right by default; rotated toward its target in flight)
+function planeSVG() {
+  return `<svg class="paper" viewBox="0 0 28 18" aria-hidden="true"><g class="glide">
+    <path class="pw" d="M2 3 L27 9 L9 9 Z"/>
+    <path class="pb" d="M2 15 L27 9 L9 9 Z"/>
+    <path class="pc" d="M2 3 L2 15 L9 9 Z"/>
+  </g></svg>`;
+}
+
 // ---- office view: floor plan (built once, updated in place) ----
 function buildFloorPlan() {
   const roomDecor = '<div class="decor window"></div><div class="decor board"></div><div class="decor plant">🪴</div>';
@@ -199,8 +213,10 @@ function buildFloorPlan() {
     .filter(([role]) => ROOMS[role])
     .map(([role, info]) => {
       const R = ROOMS[role];
-      return `<div class="room" id="room-${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
+      const floorClass = `floor-${FLOORS[roleSeed(role) % FLOORS.length]}`;
+      return `<div class="room ${floorClass}" id="room-${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
         ${roomDecor}
+        <div class="props">${PROPS[role] || ''}</div>
         <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
         <div class="floor"></div>
       </div>`;
@@ -256,30 +272,30 @@ function receive(role) {
   r.el.classList.add('receiving');
   setTimeout(() => r.el.classList.remove('receiving'), 800);
 }
-function sendCourier(from, to) {
+function sendPlane(from, to) {
   if (!courierLayer || paused || !ROOMS[from] || !ROOMS[to]) return;
-  if (courierLayer.childElementCount > 8) return; // don't flood
+  if (courierLayer.childElementCount > 9) return; // don't flood the air
   const a = centerOf(from);
   const b = centerOf(to);
+  // heading in screen space (the plan is wider than tall: 1% x ≈ 1.6 × 1% y)
+  const ang = Math.round((Math.atan2((b.y - a.y) * 0.625, b.x - a.x) * 180) / Math.PI);
   const el = document.createElement('div');
-  el.className = 'courier' + (b.x < a.x ? ' flip' : '');
-  const seed = roleSeed(from) + roleSeed(to);
-  el.innerHTML = walkerSVG(SHIRTS[seed % SHIRTS.length], SKINS[seed % SKINS.length], HAIRS[seed % HAIRS.length], true);
+  el.className = 'plane';
+  el.style.setProperty('--ang', `${ang}deg`);
+  el.innerHTML = planeSVG();
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
-  // path: source -> hallway -> along hallway -> destination
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2 - 7; // arc lift so it glides
   const anim = el.animate([
-    { left: `${a.x}%`, top: `${a.y}%`, offset: 0 },
-    { left: `${CORRIDOR_X}%`, top: `${a.y}%`, offset: 0.28 },
-    { left: `${CORRIDOR_X}%`, top: `${b.y}%`, offset: 0.7 },
-    { left: `${b.x}%`, top: `${b.y}%`, offset: 1 },
-  ], { duration: 2800, easing: 'ease-in-out', fill: 'forwards' });
-  anim.onfinish = () => {
-    receive(to);
-    const fade = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, fill: 'forwards' });
-    fade.onfinish = () => el.remove();
-  };
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.08 },
+    { left: `${midX}%`, top: `${midY}%`, offset: 0.5 },
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.9 },
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },
+  ], { duration: 1700, easing: 'ease-in-out', fill: 'forwards' });
+  anim.onfinish = () => { receive(to); el.remove(); };
 }
 function diffHandoffs(prev, cur) {
   if (prev === null) return;
@@ -297,7 +313,7 @@ function diffHandoffs(prev, cur) {
     if (seen.has(k)) continue;
     seen.add(k);
     if (n++ >= 5) break;
-    sendCourier(from, to);
+    sendPlane(from, to);
   }
 }
 
@@ -340,7 +356,7 @@ function ambientModel() {
 }
 function ambientStep() {
   const [from, to] = pick(EDGES);
-  sendCourier(from, to);
+  sendPlane(from, to);
 }
 function startAmbient() {
   if (ambientOn || paused) return;

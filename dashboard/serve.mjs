@@ -32,8 +32,11 @@ createServer(async (req, res) => {
     if (shared !== sharedDir && !shared.startsWith(sharedDir + sep)) {
       res.writeHead(403); res.end('forbidden'); return;
     }
-    const fallback = normalize(join(root, '.claude', 'state', name));
-    for (const f of [shared, fallback]) {
+    const stateDir = normalize(join(root, '.claude', 'state'));
+    const fallback = normalize(join(stateDir, name));
+    const candidates = [shared];
+    if (fallback === stateDir || fallback.startsWith(stateDir + sep)) candidates.push(fallback);
+    for (const f of candidates) {
       try {
         const data = await readFile(f);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

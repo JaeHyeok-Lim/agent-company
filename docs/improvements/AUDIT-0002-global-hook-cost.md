@@ -8,7 +8,7 @@
 | 분류 | 비효율 (자원/지연) |
 | 심각도 | 중간 |
 | 영향 범위 | `~/.claude/settings.json`(전역 hooks), `~/.claude/agent-company/track-agent.mjs` |
-| 상태 | 제안 (대기) |
+| 상태 | ✅ 승인 → 반영 완료 (2026-06-22) |
 
 ## 1. 관찰 / 배경
 `npm run promote`가 전역 `settings.json`에 `PreToolUse(Task|Agent)`와 `SubagentStop` hook을
@@ -32,5 +32,11 @@
 기본 on 유지하되 옵트아웃 제공 권장.
 
 ## 5. 결재
-- [ ] 승인   [ ] 보류   [ ] 반려
-- CEO 메모:
+- [x] 승인   [ ] 보류   [ ] 반려
+- CEO 메모: 승인 — 2026-06-22 반영 완료 (옵션 A, 기본 ON 유지).
+
+## 6. 반영 내역
+- `.claude/hooks/track-agent.mjs` 상단에 옵트아웃 게이트 추가:
+  `AGENT_COMPANY_TRACK=0|off|false`면 즉시 no-op exit. 미설정 시 기본 ON(추적).
+- 잔여: node 콜드스타트 자체는 hook 명령이 `node`라 남음(끄면 0). 추적 불필요 세션에선
+  env로 끄면 됨.

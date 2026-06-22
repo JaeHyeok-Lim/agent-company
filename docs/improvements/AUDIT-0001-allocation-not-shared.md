@@ -8,7 +8,7 @@
 | 분류 | 문제 (일관성 결함) |
 | 심각도 | 중간 |
 | 영향 범위 | `dashboard/app.js`(`/shared/allocation.json` 폴링), `chief-of-staff` 인원배정 기록, `dashboard/serve.mjs` |
-| 상태 | 제안 (대기) |
+| 상태 | ✅ 승인 → 반영 완료 (2026-06-22) |
 
 ## 1. 관찰 / 배경
 전역 추적 전환 후 대시보드는 상태를 `~/.claude/agent-company/`의 공용 파일에서 읽습니다
@@ -32,5 +32,11 @@ allocation이 없습니다.
 작음(프롬프트 1–2줄 또는 serve 라우트 1개). 리스크 낮음, 되돌리기 쉬움.
 
 ## 5. 결재
-- [ ] 승인   [ ] 보류   [ ] 반려
-- CEO 메모:
+- [x] 승인   [ ] 보류   [ ] 반려
+- CEO 메모: 승인 — 2026-06-22 반영 완료.
+
+## 6. 반영 내역
+- `dashboard/serve.mjs`: `/shared/allocation.json`이 없으면 프로젝트-로컬
+  `.claude/state/allocation.json`로 폴백(경로 가드 포함).
+- `.claude/workflows/staffed-build.js`: chief-of-staff가 allocation을
+  `~/.claude/agent-company/allocation.json`에도 기록하도록 프롬프트 보강.

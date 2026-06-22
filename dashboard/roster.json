@@ -1,4 +1,12 @@
 {
+  "ceo": {
+    "name": "You (CEO)",
+    "emoji": "👑",
+    "color": "#ffd24a",
+    "model": "—",
+    "trait": "당신 — 목표를 지시하고 결재합니다. 캐릭터를 클릭하면 그 팀원이 한 작업 목록을 볼 수 있어요.",
+    "boss": true
+  },
   "orchestrator": {
     "name": "Orchestrator",
     "emoji": "🎩",

@@ -65,6 +65,62 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+// ---- per-character task modal (click any character to see what it has done) ----
+let lastState = { instances: {} };
+let modalEl = null;
+let modalTitle = null;
+let modalBody = null;
+function statusDot(s) {
+  if (s === 'working') return '🟡';
+  if (s === 'done') return '🟢';
+  return '⚪';
+}
+function taskListHtml(insts) {
+  if (!insts.length) return '<p class="modal-empty">아직 한 작업이 없습니다.</p>';
+  const rank = { working: 0, done: 1, idle: 2 };
+  const sorted = insts.slice().sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+  const rows = sorted.map((x) => `<li><span class="mt-dot">${statusDot(x.status)}</span><span class="mt-task">${escapeHtml(x.task || '(작업 미상)')}</span><span class="mt-st">${escapeHtml(x.status)}</span></li>`).join('');
+  return `<ul class="modal-tasks">${rows}</ul>`;
+}
+function openModal(role) {
+  ensureModal();
+  const all = Object.values(lastState.instances || {});
+  const info = roster[role] || { name: role, emoji: '' };
+  let body;
+  if (role === 'ceo') {
+    const roles = [...new Set(all.map((x) => x.role))];
+    body = roles.length
+      ? roles.map((r) => `<h4>${(roster[r]?.emoji) || ''} ${escapeHtml(roster[r]?.name || r)}</h4>${taskListHtml(all.filter((x) => x.role === r))}`).join('')
+      : '<p class="modal-empty">이번 세션에 아직 팀 작업이 없습니다.</p>';
+  } else {
+    body = taskListHtml(all.filter((x) => x.role === role));
+  }
+  modalTitle.innerHTML = `${info.emoji || ''} ${escapeHtml(info.name || role)} <span class="modal-sub">— 한 작업 (이번 세션)</span>`;
+  modalBody.innerHTML = body;
+  modalEl.hidden = false;
+}
+function ensureModal() {
+  if (modalEl) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'agent-modal';
+  wrap.className = 'modal';
+  wrap.hidden = true;
+  wrap.innerHTML = '<div class="modal-card"><button class="modal-x" type="button" aria-label="닫기">✕</button><h3 class="modal-title"></h3><div class="modal-body"></div></div>';
+  document.body.appendChild(wrap);
+  modalEl = wrap;
+  modalTitle = wrap.querySelector('.modal-title');
+  modalBody = wrap.querySelector('.modal-body');
+  const close = () => { modalEl.hidden = true; };
+  wrap.addEventListener('click', (e) => { if (e.target === wrap || e.target.classList.contains('modal-x')) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  // delegated: click any element tagged with data-role (card, room, or the CEO figure)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#agent-modal')) return;
+    const el = e.target.closest('[data-role]');
+    if (el) openModal(el.dataset.role);
+  });
+}
+
 // ---- view toggle (persisted) ----
 function setView(v) {
   document.body.dataset.view = v;
@@ -140,7 +196,7 @@ function card(role, info, instances, planned) {
   const d = dots(instances, planned);
   const latest = instances.find((x) => x.status === 'working') || instances[instances.length - 1];
   return `
-  <div class="card ${cls} status-${status}" style="--accent:${info.color}">
+  <div class="card ${cls} status-${status}" data-role="${role}" style="--accent:${info.color}">
     <div class="avatar">${info.emoji}</div>
     <div class="body">
       <div class="name">${escapeHtml(info.name)} <span class="model">${escapeHtml(info.model)}</span>${b ? `<span class="count">${escapeHtml(b)}</span>` : ''}</div>
@@ -218,7 +274,7 @@ function buildFloorPlan() {
     .map(([role, info]) => {
       const R = ROOMS[role];
       const floorClass = `floor-${FLOORS[roleSeed(role) % FLOORS.length]}`;
-      return `<div class="room ${floorClass}" id="room-${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
+      return `<div class="room ${floorClass}" id="room-${role}" data-role="${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
         ${roomDecor}
         <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
         <div class="floor"></div>
@@ -247,6 +303,8 @@ function buildFloorPlan() {
   </aside>`;
   office.innerHTML = `<div class="office-wrap"><div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>${rail}</div>`;
   floorPlanEl = office.querySelector('.floor-plan');
+  // CEO (you) — an overseeing figure at the top of the floor; click it for the team's work
+  floorPlanEl.insertAdjacentHTML('beforeend', '<div class="ceo" data-role="ceo" title="You (CEO) — 클릭하면 팀 작업 보기"><span class="ceo-fig">👑</span><span class="ceo-tag">You</span></div>');
   courierLayer = office.querySelector('.couriers');
   slipsEl = office.querySelector('.slips');
   shelvesEl = office.querySelector('.shelves');
@@ -409,6 +467,7 @@ function diffHandoffs(prev, cur) {
 
 // ---- render ----
 function render(state, alloc) {
+  lastState = state; // remember for the click-to-see-tasks modal
   const all = Object.values(state.instances || {});
   const plannedOf = (role) => {
     const s = (alloc.allocation || []).find((a) => a.role === role);
@@ -458,6 +517,7 @@ async function tick() {
 // ---- boot ----
 try {
   roster = await getJSON('/dashboard/roster.json');
+  ensureModal(); // wire click-to-see-tasks (cards, rooms, CEO)
   await tick();
   setInterval(tick, POLL_MS);
 } catch (e) {

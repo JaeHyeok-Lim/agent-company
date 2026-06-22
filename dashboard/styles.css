@@ -298,6 +298,30 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 }
 @keyframes planeWobble { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-1px) rotate(4deg); } }
 
+/* clickable characters → task modal */
+.room, .card, .ceo { cursor: pointer; }
+.room:hover { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 75%, #fff); }
+
+/* CEO (you) figure overseeing the floor */
+.ceo { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; flex-direction: column; align-items: center; }
+.ceo .ceo-fig { font-size: 22px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .55)); transition: transform .15s ease; }
+.ceo .ceo-tag { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 7px; color: #3a2a10; background: linear-gradient(#ffd24a, #f5b51e); border: 1px solid #9a6a12; border-radius: 4px; padding: 1px 5px; margin-top: -2px; }
+.ceo:hover .ceo-fig { transform: translateY(-3px) scale(1.08); }
+
+/* per-character task modal */
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0, 0, 0, .55); }
+.modal[hidden] { display: none; }
+.modal-card { width: min(440px, 92vw); max-height: 80vh; overflow: auto; position: relative; background: linear-gradient(180deg, #1b1f2a, #12141b); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 44px rgba(0, 0, 0, .6); }
+.modal-x { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; }
+.modal-title { margin: 0 0 12px; font-size: 15px; }
+.modal-title .modal-sub { color: var(--muted); font-size: 12px; font-weight: 400; }
+.modal-body h4 { margin: 12px 0 5px; font-size: 12px; color: var(--text); }
+.modal-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.modal-tasks li { display: flex; align-items: center; gap: 8px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+.modal-tasks .mt-task { flex: 1; min-width: 0; }
+.modal-tasks .mt-st { font-size: 10px; color: var(--muted); text-transform: capitalize; }
+.modal-empty { color: var(--muted); font-size: 12px; }
+
 @keyframes walk { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-2px) rotate(3deg); } }
 @keyframes screen { 0% { filter: brightness(1); } 50% { filter: brightness(1.5); } 100% { filter: brightness(.85); } }
 @keyframes headbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }

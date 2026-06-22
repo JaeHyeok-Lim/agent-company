@@ -77,12 +77,16 @@ When code is added later (TS SDK escalation path), record `build` / `test` / `li
 ## Brain link
 
 Personal knowledge graph: `C:\Users\jaehyeok\Documents\Obsidian`.
-Before non-trivial work, `/recall` the relevant notes. Most relevant maps/neurons for this
-project:
+Before non-trivial work, `/recall` the relevant notes. This project's brain home is its MOC
+`[[projects/agent-company]]` (`MOC/projects/agent-company.md`) — start there and file new
+agent-company neurons under `neurons/projects/agent-company/`. Most relevant maps/neurons:
+- Project MOC: `[[projects/agent-company]]` → `[[agent-company-overview]]`
+- Orchestration principles: `[[orchestrator-is-main-session]]`, `[[portable-agent-prompts]]`,
+  `[[agent-role-model-tiering]]`, `[[project-scoped-claude-config]]`, `[[agent-observability-via-hooks]]`,
+  `[[multi-agent-communication-patterns]]`, `[[flexible-agent-headcount]]`
 - MOC: `[[ai-agent-engineering]]` (harness vs loop engineering — the two big levers)
 - `[[harness-engineering]]`, `[[loop-engineering]]`, `[[agentic-loop-structure]]`
 - `[[context-rot]]`, `[[retrieval-is-the-bottleneck]]` (keep each role's context tight)
 
-**Gap to capture:** the brain currently has no multi-agent-orchestration neuron. As patterns
-prove out here (role decomposition, when to fan out vs pipeline, orchestrator-as-main-session),
-run `/capture` to add them.
+As further patterns prove out here (when to fan out vs pipeline, new role types), `/capture`
+them under the project MOC above.

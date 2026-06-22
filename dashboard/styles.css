@@ -307,6 +307,8 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .ceo .ceo-fig { font-size: 22px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .55)); transition: transform .15s ease; }
 .ceo .ceo-tag { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 7px; color: #3a2a10; background: linear-gradient(#ffd24a, #f5b51e); border: 1px solid #9a6a12; border-radius: 4px; padding: 1px 5px; margin-top: -2px; }
 .ceo:hover .ceo-fig { transform: translateY(-3px) scale(1.08); }
+.ceo.sending .ceo-fig { filter: drop-shadow(0 0 7px #f5c451) drop-shadow(0 2px 2px rgba(0,0,0,.55)); transform: scale(1.12); }
+.ceo.receiving .ceo-fig { filter: drop-shadow(0 0 7px #4caf72) drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 
 /* per-character task modal */
 .modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0, 0, 0, .55); }

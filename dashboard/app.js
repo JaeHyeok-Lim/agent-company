@@ -370,6 +370,7 @@ function updateTaskBoard(all) {
 
 // ---- couriers (document handoffs), routed through the corridor ----
 function centerOf(role) {
+  if (role === 'ceo') return { x: 50, y: 2 }; // the CEO figure at the top of the floor
   const R = ROOMS[role] || ROOMS.orchestrator;
   return { x: R.x + R.w / 2, y: R.y + R.h / 2 };
 }
@@ -396,7 +397,7 @@ function agentCenter(role, idx) {
   };
 }
 function flashAgent(role, idx, cls, ms) {
-  const ws = agentEl(role, idx);
+  const ws = role === 'ceo' ? floorPlanEl?.querySelector('.ceo') : agentEl(role, idx);
   if (!ws) return;
   ws.classList.remove(cls);
   ws.getBoundingClientRect(); // restart the flash
@@ -404,7 +405,9 @@ function flashAgent(role, idx, cls, ms) {
   setTimeout(() => ws.classList.remove(cls), ms);
 }
 function sendPlane(from, fromIdx, to, toIdx, title) {
-  if (!courierLayer || !ROOMS[from] || !ROOMS[to]) return;
+  const okFrom = ROOMS[from] || from === 'ceo';
+  const okTo = ROOMS[to] || to === 'ceo';
+  if (!courierLayer || !okFrom || !okTo) return;
   if (courierLayer.childElementCount > 24) return; // cap concurrent planes
   const a = agentCenter(from, fromIdx);
   const b = agentCenter(to, toIdx);
@@ -454,8 +457,8 @@ function diffHandoffs(prev, cur) {
     const p = prev[id];
     const task = (c.task || '').slice(0, 28); // the REAL task this agent is handling
     if (!p && c.status === 'working' && ENTRY.has(c.role)) {
-      // the orchestrator hands this specific new agent its real task
-      fire('orchestrator', 0, c.role, Math.max(0, idxOf(c.role, id)), task || 'task');
+      // your command leaves YOU (the CEO) and is distributed to the starting agent
+      fire('ceo', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '지시');
     } else if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) {
       // this specific agent ships its finished result to a specific agent downstream
       fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]), task || 'result');

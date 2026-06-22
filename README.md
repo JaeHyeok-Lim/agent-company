@@ -7,6 +7,8 @@ future projects.
 > Think of it as an org: the main Claude Code session is the orchestrator (PM), and each
 > file in `.claude/agents/` is an employee with a defined role, toolset, and model tier.
 
+📖 **사용설명서(한글, 도식 포함): [docs/사용설명서.md](docs/사용설명서.md)** — 가장 먼저 읽으면 좋습니다.
+
 ## Layout
 
 ```

@@ -150,7 +150,8 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
   box-shadow: 0 0 0 3px #2a2f3c, inset 0 0 80px rgba(0, 0, 0, .5);
   image-rendering: pixelated;
 }
-.floor-plan.paused * { animation-play-state: paused !important; }
+/* corridor strollers are decorative (not real work) → only in Demo mode */
+.floor-plan:not(.demo) .corridor { display: none; }
 
 /* central corridor + strolling people */
 .corridor {

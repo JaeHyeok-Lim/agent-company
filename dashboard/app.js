@@ -308,8 +308,8 @@ function flashAgent(role, idx, cls, ms) {
   ws.classList.add(cls);
   setTimeout(() => ws.classList.remove(cls), ms);
 }
-function sendPlane(from, fromIdx, to, toIdx) {
-  if (!courierLayer || paused || !ROOMS[from] || !ROOMS[to]) return;
+function sendPlane(from, fromIdx, to, toIdx, title) {
+  if (!courierLayer || !ROOMS[from] || !ROOMS[to]) return;
   if (courierLayer.childElementCount > 24) return; // cap concurrent planes
   const a = agentCenter(from, fromIdx);
   const b = agentCenter(to, toIdx);
@@ -319,7 +319,7 @@ function sendPlane(from, fromIdx, to, toIdx) {
   el.className = 'plane';
   el.style.setProperty('--ang', `${ang}deg`);
   el.style.setProperty('--from', roster[from]?.color || '#9aa3b2'); // tint the plane by sender
-  el.innerHTML = `<div class="plane-label">${escapeHtml(messageTitle(from, to))}</div>${planeSVG()}`;
+  el.innerHTML = `<div class="plane-label">${escapeHtml(title || messageTitle(from, to))}</div>${planeSVG()}`;
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
@@ -353,18 +353,19 @@ function diffHandoffs(prev, cur) {
   }
   const idxOf = (role, id) => (byRole[role] || []).indexOf(id);
   let n = 0;
-  const fire = (from, fromIdx, to, toIdx) => {
-    if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx); }
+  const fire = (from, fromIdx, to, toIdx, title) => {
+    if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx, title); }
   };
   for (const id of Object.keys(cur)) {
     const c = cur[id];
     const p = prev[id];
+    const task = (c.task || '').slice(0, 28); // the REAL task this agent is handling
     if (!p && c.status === 'working' && ENTRY.has(c.role)) {
-      // the orchestrator hands this specific new agent its task
-      fire('orchestrator', 0, c.role, Math.max(0, idxOf(c.role, id)));
+      // the orchestrator hands this specific new agent its real task
+      fire('orchestrator', 0, c.role, Math.max(0, idxOf(c.role, id)), task || 'task');
     } else if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) {
-      // this specific agent ships its result to a specific agent downstream
-      fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]));
+      // this specific agent ships its finished result to a specific agent downstream
+      fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]), task || 'result');
     }
   }
 }
@@ -391,7 +392,7 @@ function render(state, alloc) {
   const working = all.filter((x) => x.status === 'working').length;
   updated.textContent = state.updated
     ? `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`
-    : 'idle — ambient office running';
+    : (demoMode ? 'demo motion (no real work)' : 'idle — no active work');
 }
 
 // ---- ambient "busy office" loop (default ON in office view) ----
@@ -407,7 +408,7 @@ const SAMPLE_TASKS = {
 };
 let ambientOn = false;
 let ambientTimer = null;
-let paused = false;
+let demoMode = false; // OFF by default → motion reflects only real work
 let ambientState = null;
 let ambientTickN = 0;
 function buildAmbient() {
@@ -437,7 +438,7 @@ function emitAmbientPlanes(k) {
   }
 }
 function startAmbient() {
-  if (ambientOn || paused) return;
+  if (ambientOn) return;
   ambientOn = true;
   lastSig = ''; prevInst = null; // suppress diff burst; planes come from the timer
   ambientState = buildAmbient();
@@ -459,9 +460,10 @@ async function tick() {
   const active = Object.values(state.instances || {}).some((x) => x.status === 'working');
   const inOffice = document.body.dataset.view === 'office';
 
-  // Idle + office view + not paused → keep the office alive with the ambient loop.
-  // Otherwise (a real workflow is active, or we're on cards, or paused) → show real state.
-  if (inOffice && !paused && !active) {
+  // Motion reflects REAL work by default: render live state (working agents move, idle
+  // agents doze, planes fire only on real handoffs with the real task text). The ambient
+  // "busy office" showcase runs only when Demo mode is ON and nothing real is happening.
+  if (inOffice && demoMode && !active) {
     startAmbient();
   } else {
     stopAmbient();
@@ -469,15 +471,15 @@ async function tick() {
   }
 }
 
-// ---- pause / resume all motion ----
-function setPaused(p) {
-  paused = p;
-  pauseBtn.textContent = p ? '▶ Resume motion' : '⏸ Pause motion';
-  if (floorPlanEl) floorPlanEl.classList.toggle('paused', p);
-  if (p) stopAmbient();
-  else tick();
+// ---- demo motion toggle (default OFF → the floor only animates for real work) ----
+function setDemo(on) {
+  demoMode = on;
+  pauseBtn.textContent = on ? '⏹ Stop demo' : '🎬 Demo motion';
+  if (floorPlanEl) floorPlanEl.classList.toggle('demo', on);
+  if (!on) stopAmbient();
+  tick();
 }
-pauseBtn.addEventListener('click', () => setPaused(!paused));
+pauseBtn.addEventListener('click', () => setDemo(!demoMode));
 
 // ---- boot ----
 try {

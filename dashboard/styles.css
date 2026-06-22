@@ -221,10 +221,10 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .room.floor-carpet .floor { background: #2a3340; }
 
 /* one workstation = person + desk + monitor (compact for the floor plan) */
-.workstation { position: relative; width: 62px; height: 84px; }
-.workstation .person { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 44px; height: 50px; overflow: visible; z-index: 1; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); }
+.workstation { position: relative; width: 64px; height: 96px; }
+.workstation .person { position: absolute; left: 50%; bottom: 38px; transform: translateX(-50%); width: 44px; height: 50px; overflow: visible; z-index: 1; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); }
 .workstation::before { /* chair back behind the seated person */
-  content: ""; position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  content: ""; position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%);
   width: 30px; height: 26px; border-radius: 9px 9px 5px 5px;
   background: linear-gradient(#39414f, #2b3340); box-shadow: 0 2px 0 rgba(0, 0, 0, .3); z-index: 0;
 }
@@ -236,24 +236,25 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .person .arm   { transform-box: fill-box; transform-origin: 50% 0%; }
 .person .torso { transform-box: fill-box; transform-origin: 50% 100%; }
 
-.workstation .desk { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: 54px; height: 12px; border-radius: 3px; background: linear-gradient(180deg, #7a5538, #4a3322); box-shadow: 0 3px 4px rgba(0, 0, 0, .4); z-index: 3; }
+.workstation .desk { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 54px; height: 12px; border-radius: 3px; background: linear-gradient(180deg, #7a5538, #4a3322); box-shadow: 0 3px 4px rgba(0, 0, 0, .4); z-index: 3; }
 .workstation .desk::after { /* keyboard on the desk */
   content: ""; position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%);
   width: 22px; height: 5px; border-radius: 1px; background: #2c333f; box-shadow: inset 0 1px 0 #3c4452;
 }
-.workstation .monitor { position: absolute; left: 50%; bottom: 23px; transform: translateX(7px); width: 16px; height: 11px; border-radius: 2px; background: #20242e; border: 1.5px solid #2c333f; z-index: 2; }
+.workstation .monitor { position: absolute; left: 50%; bottom: 37px; transform: translateX(7px); width: 16px; height: 11px; border-radius: 2px; background: #20242e; border: 1.5px solid #2c333f; z-index: 2; }
 .workstation .monitor::after { content: ""; position: absolute; inset: 1.5px; border-radius: 1px; background: #324055; }
 .workstation.work .monitor::after { animation: screen 1.1s steps(3) infinite; }
 
-.workstation .bubble {
-  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-  white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-  font-size: 9px; color: var(--text);
-  background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 1px 6px;
-  opacity: 0; transition: opacity .2s ease; pointer-events: none; z-index: 3;
+/* current task shown under each agent */
+.workstation .task-cap {
+  position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); z-index: 4;
+  max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 8px; line-height: 1.3; color: var(--muted);
+  background: rgba(12, 16, 24, .92); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px;
 }
-.workstation.work .bubble { opacity: 1; border-color: color-mix(in srgb, #f5c451 55%, var(--line)); }
-.workstation.done .bubble { opacity: 1; color: #8fe0ab; border-color: color-mix(in srgb, #4caf72 55%, var(--line)); }
+.workstation.work .task-cap { color: #ffdf9e; border-color: color-mix(in srgb, #f5c451 55%, var(--line)); }
+.workstation.done .task-cap { color: #8fe0ab; border-color: color-mix(in srgb, #4caf72 55%, var(--line)); }
+.workstation.doze .task-cap { opacity: .65; }
 .workstation .zzz { position: absolute; top: 2px; left: 60%; font-size: 11px; font-style: italic; color: var(--muted); opacity: 0; }
 .workstation.doze .zzz { animation: zfloat 2.6s ease-in-out infinite; }
 .workstation.doze.calm .zzz { animation: none; }

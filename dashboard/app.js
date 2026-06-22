@@ -103,10 +103,10 @@ function workerClass(status, calm) {
   if (status === 'done') return 'done';
   return calm ? 'doze calm' : 'doze';
 }
-function workerBubble(w) {
-  if (w.status === 'working') return escapeHtml((w.task || 'working…').slice(0, 30));
+function taskCaption(w) {
+  if (w.status === 'working') return escapeHtml((w.task || 'working…').slice(0, 26));
   if (w.status === 'done') return 'done ✓';
-  return 'z';
+  return 'idle';
 }
 function podHead(instances, crewLen, planned) {
   if (instances.length) return `${crewLen}${instances.length > CREW_CAP ? '+' : ''}`;
@@ -190,12 +190,12 @@ function workstation(info, w, calm, seed) {
   const skin = SKINS[seed % SKINS.length];
   const hair = HAIRS[(seed * 3 + 1) % HAIRS.length];
   return `<div class="workstation ${cls}" style="--skin:${skin};--hair:${hair}">
-    <div class="bubble">${workerBubble(w)}</div>
     <div class="zzz">z</div>
     <div class="badge">✓</div>
     ${personSVG()}
     <div class="monitor"></div>
     <div class="desk"></div>
+    <div class="task-cap">${taskCaption(w)}</div>
   </div>`;
 }
 // a small standing/walking person (no desk) for the corridor + couriers
@@ -366,6 +366,15 @@ function render(state, alloc) {
 
 // ---- ambient "busy office" loop (default ON in office view) ----
 const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2 };
+const SAMPLE_TASKS = {
+  orchestrator: ['plan the sprint', 'route work'],
+  'chief-of-staff': ['staff the goal', 'status sweep'],
+  researcher: ['scan auth flow', 'map data model', 'survey APIs'],
+  architect: ['draft design', 'pick patterns', 'spec the API'],
+  implementer: ['build module A', 'wire endpoints', 'fix edge case'],
+  reviewer: ['review the diff', 'check edge cases', 'verify repro'],
+  scribe: ['update the README', 'write changelog'],
+};
 let ambientOn = false;
 let ambientTimer = null;
 let paused = false;
@@ -374,7 +383,7 @@ let ambientTickN = 0;
 function buildAmbient() {
   const instances = {};
   for (const [role, n] of Object.entries(AMBIENT_COUNT)) {
-    for (let i = 0; i < n; i++) instances[`amb-${role}-${i}`] = { role, status: 'working', task: `${role}` };
+    for (let i = 0; i < n; i++) instances[`amb-${role}-${i}`] = { role, status: 'working', task: (SAMPLE_TASKS[role] && pick(SAMPLE_TASKS[role])) || role };
   }
   return { instances, updated: null };
 }

@@ -261,15 +261,24 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .workstation .badge { position: absolute; top: 2px; left: 50%; transform: translateX(-50%) scale(0); width: 16px; height: 16px; border-radius: 50%; background: #4caf72; color: #07210f; font-size: 10px; font-weight: 800; display: grid; place-items: center; z-index: 3; }
 .workstation.done .badge { animation: pop .5s ease-out forwards; }
 
+/* status pip — at-a-glance working / done / idle (matches the legend) */
+.workstation .pip { position: absolute; top: 3px; left: 50%; transform: translateX(9px); width: 8px; height: 8px; border-radius: 50%; background: #5b6472; border: 1px solid rgba(0,0,0,.4); z-index: 5; }
+.workstation.work .pip { background: #f5c451; animation: pippulse 1.2s infinite; }
+.workstation.done .pip { background: #4caf72; }
+@keyframes pippulse { 0% { box-shadow: 0 0 0 0 rgba(245,196,81,.6); } 70% { box-shadow: 0 0 0 7px rgba(245,196,81,0); } 100% { box-shadow: 0 0 0 0 rgba(245,196,81,0); } }
+
 /* body-part motion by status */
 .workstation.work .head  { animation: headbob .9s ease-in-out infinite; }
 .workstation.work .arm-l { animation: typeA .28s ease-in-out infinite; }
 .workstation.work .arm-r { animation: typeB .28s ease-in-out infinite; }
+.workstation.work .monitor { box-shadow: 0 0 6px rgba(120,170,230,.5); }   /* lit screen while working */
 .workstation.done .arm-l, .workstation.done .arm-r { animation: cheer .6s ease-out; }
 .workstation.doze .head  { animation: nodoff 3.4s ease-in-out infinite; }
 .workstation.doze .torso { animation: breathe 3.4s ease-in-out infinite; }
-.workstation.doze .person { opacity: .9; }
 .workstation.doze.calm .head { animation: none; }
+/* NOT working → clearly "off": dim + desaturate the person and darken the monitor */
+.workstation:not(.work) .person { opacity: .62; filter: drop-shadow(0 3px 2px rgba(0,0,0,.45)) grayscale(.75) brightness(.8); }
+.workstation:not(.work) .monitor::after { background: #161a22; }
 
 /* paper-airplane handoffs flying between zones */
 .couriers { position: absolute; inset: 0; pointer-events: none; z-index: 6; }

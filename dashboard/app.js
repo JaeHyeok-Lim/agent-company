@@ -179,6 +179,7 @@ function workstation(info, w, calm, seed) {
   const hair = HAIRS[(seed * 3 + 1) % HAIRS.length];
   const cap = taskCaption(w);
   return `<div class="workstation ${cls}" style="--skin:${skin};--hair:${hair}">
+    <i class="pip" title="${w.status}"></i>
     <div class="zzz">z</div>
     <div class="badge">✓</div>
     ${personSVG()}
@@ -441,6 +442,16 @@ async function tick() {
   let alloc = { allocation: [] };
   try { state = await getJSON('/shared/agents.json'); } catch { /* none yet */ }
   try { alloc = await getJSON('/shared/allocation.json'); } catch { /* none yet */ }
+  // scope to the current (latest) chat session so the floor + task board reflect
+  // only this session's assigned work — not the global all-time history
+  const sid = state.session;
+  if (sid) {
+    const scoped = {};
+    for (const [id, v] of Object.entries(state.instances || {})) {
+      if (v.session === sid) scoped[id] = v;
+    }
+    state = { instances: scoped, updated: state.updated, session: sid };
+  }
   render(state, alloc);
 }
 

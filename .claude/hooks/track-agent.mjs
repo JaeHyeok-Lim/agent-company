@@ -47,14 +47,17 @@ state.instances = state.instances || {};
 state.active = state.active || [];
 const now = new Date().toISOString();
 
+const session = input.session_id || 'local'; // group work by chat session
+
 if (mode === 'pre') {
   const ti = input.tool_input || {};
   const role = ti.subagent_type || ti.subagentType || 'unknown';
   const task = String(ti.description || ti.prompt || '').slice(0, 160);
   const rand = Math.floor(Math.random() * 1e6).toString(36);
   const id = `${role}-${Date.now().toString(36)}-${rand}`;
-  state.instances[id] = { role, status: 'working', task, since: now };
+  state.instances[id] = { role, status: 'working', task, since: now, session };
   state.active.push(id);
+  state.session = session; // latest active session — the dashboard scopes to this
   prune(state);
 } else if (mode === 'stop') {
   const id = state.active.shift();

@@ -30,7 +30,9 @@ only observe and file proposals.
    the fix. Never edit code, workflows, or config yourself.
 4. **File the 결재 서류.** Write each proposal as `docs/improvements/AUDIT-NNNN-<slug>.md` from
    `docs/improvements/_template.md`, and add a row to `docs/improvements/README.md` (status: 제안).
-   Number sequentially after the highest existing `AUDIT-NNNN`.
+   Number sequentially after the highest existing `AUDIT-NNNN`. **Every memo MUST open with a
+   one-line plain-Korean summary** — `> 🧾 **한줄 요약**: …` — stating in natural language what is
+   being approved and why, so the CEO can decide at a glance before reading the detail.
 5. **Report up.** Your final message is a short briefing: what you filed (numbers + titles +
    severity) and your single top recommendation — decision-ready, no fluff.
 

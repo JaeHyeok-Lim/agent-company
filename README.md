@@ -57,10 +57,15 @@ company floor plan**: a building with a **central corridor** (people stroll up a
 plant, and **human figures** at desks. People **type** while working, **pop a green ✓** when
 done, and **doze with floating z's** when idle. Skin/hair/shirt vary per person.
 
-**Information handoffs fly as paper airplanes — with the message title attached:** on each
-handoff a **paper airplane ✈️ arcs from one department to another** (nose pointed at its target)
-carrying a label of *what* it is (`task brief`, `findings`, `design spec`, `PR diff`,
-`change request`, `status report`, `docs`, …), and the destination flashes **📥** on arrival.
+**Information handoffs fly as paper airplanes — with the message title attached:** every message
+is a **paper airplane ✈️** that arcs (slowly at takeoff/landing so the label is readable) from
+**one specific agent to another** — not department-to-department — carrying a label of *what* it
+is (`task brief`, `findings`, `design spec`, `PR diff`, `change request`, `status report`,
+`docs`, …). **Many planes fly at once** (one per message in flight). The exact **sending agent
+flashes 📤** and the **receiving agent flashes 📥 and glances up**; each plane and its label are
+tinted with the **sender's department color** so you can trace origins. (This mirrors the real
+[communication model](docs/ARCHITECTURE.md#communication-model): orchestrator-mediated,
+structured handoffs.)
 
 Agents sit **centered and evenly spaced** at desks (seated behind a desk with monitor, keyboard,
 and chair, top-down style with shadows). They **type** when working and **doze** when idle, and

@@ -174,20 +174,14 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .3);
 }
 .room.unstaffed { opacity: .5; }
-.room.receiving { box-shadow: 0 0 0 2px #4caf72, 0 0 16px rgba(76, 175, 114, .5); }
-.room.receiving::after {
-  content: '📥'; position: absolute; bottom: 4px; right: 6px; font-size: 15px; z-index: 5;
-  animation: rfade .9s ease forwards;
-}
-.room.sending { box-shadow: 0 0 0 2px #f5c451, 0 0 16px rgba(245, 196, 81, .45); }
-.room.sending::before {
-  content: '📤'; position: absolute; bottom: 4px; left: 6px; font-size: 15px; z-index: 5;
-  animation: rfade .7s ease forwards;
-}
-/* receiver looks up briefly when a plane lands */
-.room.receiving .person { animation: glance .5s ease; }
+/* per-agent send/receive indicators — only the individual handling the message */
+.workstation.sending { filter: drop-shadow(0 0 5px rgba(245, 196, 81, .85)); }
+.workstation.receiving { filter: drop-shadow(0 0 5px rgba(76, 175, 114, .85)); }
+.workstation.sending::after { content: '📤'; position: absolute; top: -8px; left: 50%; font-size: 13px; z-index: 6; animation: rfade .7s ease forwards; }
+.workstation.receiving::after { content: '📥'; position: absolute; top: -8px; left: 50%; font-size: 13px; z-index: 6; animation: rfade .9s ease forwards; }
+.workstation.receiving .person { animation: glance .5s ease; }
 @keyframes glance { 0% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-3px); } 100% { transform: translateX(-50%) translateY(0); } }
-@keyframes rfade { 0% { opacity: 0; transform: translateY(4px); } 25% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rfade { 0% { opacity: 0; transform: translate(-50%, 4px); } 25% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -3px); } }
 
 /* yellow hanging name plaque (pixel sign) */
 .plaque {
@@ -256,9 +250,10 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 /* current task shown under each agent */
 .workstation .task-cap {
   position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); z-index: 4;
-  max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 8px; line-height: 1.3; color: var(--muted);
-  background: rgba(12, 16, 24, .92); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px;
+  max-width: 76px; white-space: normal; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 8px; line-height: 1.2; color: var(--muted);
+  background: rgba(12, 16, 24, .94); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px;
 }
 .workstation.work .task-cap { color: #ffdf9e; border-color: color-mix(in srgb, #f5c451 55%, var(--line)); }
 .workstation.done .task-cap { color: #8fe0ab; border-color: color-mix(in srgb, #4caf72 55%, var(--line)); }

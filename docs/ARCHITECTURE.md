@@ -83,6 +83,30 @@ Mirrors effort tiers — spend intelligence where it pays:
 
 (Model IDs verified via the `claude-api` skill — re-verify pricing/IDs before relying on them.)
 
+## Communication model
+
+**Chosen pattern: orchestrator-mediated hub-and-spoke with structured (schema-validated)
+handoffs.** The orchestrator (main session) routes every exchange; specialists never talk to
+each other directly. Each handoff is a typed payload — `agent(..., { schema })` returns a
+validated object that the orchestrator passes to the next stage (see `build-feature`,
+`staffed-build`, `standup`).
+
+Why this and not the alternatives:
+- **Hub-and-spoke** keeps message overhead ~O(n) (vs O(n²) for peer-to-peer mesh "gossip"),
+  preserves global context in one place, and is the most observable/controllable — the
+  orchestrator owns the conclusion.
+- **Peer-to-peer / mesh** is not even available natively: Claude Code subagents cannot message
+  each other or spawn agents ([[orchestrator-is-main-session]]), so direct agent-to-agent
+  channels can't be built without the SDK.
+- **Blackboard** (agents self-selecting work off a shared board) can win for open-ended
+  discovery, but needs agents that *poll and choose* — our one-shot subagents can't, so it's an
+  SDK-only option.
+
+Verified: the workflows already pass structured outputs between stages and the main session is
+the sole router — i.e. the system is already on the recommended pattern. No change required.
+If/when this moves to the Agent SDK (where long-lived processes can host shared memory), a
+**blackboard layer** is the natural upgrade for open-ended, ill-structured tasks.
+
 ## Escalation path → Claude Agent SDK
 
 Stay native until you hit one of these, then lift the role prompts (kept portable as Markdown)

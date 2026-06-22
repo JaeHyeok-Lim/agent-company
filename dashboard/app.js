@@ -278,19 +278,41 @@ function centerOf(role) {
   const R = ROOMS[role] || ROOMS.orchestrator;
   return { x: R.x + R.w / 2, y: R.y + R.h / 2 };
 }
-function flashRoom(role, cls, ms = 800) {
+// individual-agent helpers: the specific workstation that handles a message
+function agentEl(role, idx) {
   const r = roomEls[role];
-  if (!r) return;
-  r.el.classList.remove(cls);
-  r.el.getBoundingClientRect(); // restart the flash animation
-  r.el.classList.add(cls);
-  setTimeout(() => r.el.classList.remove(cls), ms);
+  if (!r) return null;
+  return r.floor.children[idx] || r.floor.children[0] || null;
 }
-function sendPlane(from, to) {
+function agentCount(role) {
+  const r = roomEls[role];
+  return r ? Math.max(1, r.floor.children.length) : 1;
+}
+function randIdx(role) { return Math.floor(Math.random() * agentCount(role)); }
+function agentCenter(role, idx) {
+  const ws = agentEl(role, idx);
+  if (!ws || !floorPlanEl) return centerOf(role);
+  const fp = floorPlanEl.getBoundingClientRect();
+  if (!fp.width) return centerOf(role);
+  const w = ws.getBoundingClientRect();
+  return {
+    x: ((w.left + w.width / 2) - fp.left) / fp.width * 100,
+    y: ((w.top + w.height * 0.4) - fp.top) / fp.height * 100,
+  };
+}
+function flashAgent(role, idx, cls, ms) {
+  const ws = agentEl(role, idx);
+  if (!ws) return;
+  ws.classList.remove(cls);
+  ws.getBoundingClientRect(); // restart the flash
+  ws.classList.add(cls);
+  setTimeout(() => ws.classList.remove(cls), ms);
+}
+function sendPlane(from, fromIdx, to, toIdx) {
   if (!courierLayer || paused || !ROOMS[from] || !ROOMS[to]) return;
-  if (courierLayer.childElementCount > 9) return; // don't flood the air
-  const a = centerOf(from);
-  const b = centerOf(to);
+  if (courierLayer.childElementCount > 24) return; // cap concurrent planes
+  const a = agentCenter(from, fromIdx);
+  const b = agentCenter(to, toIdx);
   // heading in screen space (the plan is wider than tall: 1% x ≈ 1.6 × 1% y)
   const ang = Math.round((Math.atan2((b.y - a.y) * 0.625, b.x - a.x) * 180) / Math.PI);
   const el = document.createElement('div');
@@ -301,7 +323,7 @@ function sendPlane(from, to) {
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
-  flashRoom(from, 'sending', 700); // 📤 at the sender as the plane launches
+  flashAgent(from, fromIdx, 'sending', 700); // 📤 on the specific sender
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2 - 7; // arc lift so it glides
   // near-departure / near-arrival waypoints (8% of the path from each end)
@@ -319,25 +341,31 @@ function sendPlane(from, to) {
     { left: `${nbx}%`, top: `${nby}%`, opacity: 1, offset: 0.87, easing: 'linear' },
     { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },
   ], { duration: 2700, fill: 'forwards' });
-  anim.onfinish = () => { flashRoom(to, 'receiving', 900); el.remove(); };
+  anim.onfinish = () => { flashAgent(to, toIdx, 'receiving', 900); el.remove(); };
 }
 function diffHandoffs(prev, cur) {
   if (prev === null) return;
-  const events = [];
+  const byRole = {};
+  for (const id of Object.keys(cur)) {
+    const role = cur[id].role;
+    if (!byRole[role]) byRole[role] = [];
+    byRole[role].push(id);
+  }
+  const idxOf = (role, id) => (byRole[role] || []).indexOf(id);
+  let n = 0;
+  const fire = (from, fromIdx, to, toIdx) => {
+    if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx); }
+  };
   for (const id of Object.keys(cur)) {
     const c = cur[id];
     const p = prev[id];
-    if (!p && c.status === 'working' && ENTRY.has(c.role)) events.push(['orchestrator', c.role]);
-    if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) events.push([c.role, NEXT[c.role]]);
-  }
-  const seen = new Set();
-  let n = 0;
-  for (const [from, to] of events) {
-    const k = `${from}>${to}`;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    if (n++ >= 5) break;
-    sendPlane(from, to);
+    if (!p && c.status === 'working' && ENTRY.has(c.role)) {
+      // the orchestrator hands this specific new agent its task
+      fire('orchestrator', 0, c.role, Math.max(0, idxOf(c.role, id)));
+    } else if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) {
+      // this specific agent ships its result to a specific agent downstream
+      fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]));
+    }
   }
 }
 
@@ -369,13 +397,13 @@ function render(state, alloc) {
 // ---- ambient "busy office" loop (default ON in office view) ----
 const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2 };
 const SAMPLE_TASKS = {
-  orchestrator: ['plan the sprint', 'route work'],
-  'chief-of-staff': ['staff the goal', 'status sweep'],
-  researcher: ['scan auth flow', 'map data model', 'survey APIs'],
-  architect: ['draft design', 'pick patterns', 'spec the API'],
-  implementer: ['build module A', 'wire endpoints', 'fix edge case'],
-  reviewer: ['review the diff', 'check edge cases', 'verify repro'],
-  scribe: ['update the README', 'write changelog'],
+  orchestrator: ['plan', 'route'],
+  'chief-of-staff': ['staffing', 'status'],
+  researcher: ['scan auth', 'map data', 'API survey'],
+  architect: ['design', 'patterns', 'API spec'],
+  implementer: ['module A', 'endpoints', 'edge fix'],
+  reviewer: ['review', 'edge cases', 'repro'],
+  scribe: ['README', 'changelog'],
 };
 let ambientOn = false;
 let ambientTimer = null;
@@ -400,7 +428,13 @@ function ambientStep() {
     ids.forEach((id) => { ambientState.instances[id].status = goIdle ? 'idle' : 'working'; });
     render(ambientState, { allocation: [] });
   }
-  sendPlane(...pick(EDGES));
+  emitAmbientPlanes(2 + Math.floor(Math.random() * 2)); // 2–3 concurrent messages each tick
+}
+function emitAmbientPlanes(k) {
+  for (let i = 0; i < k; i++) {
+    const [from, to] = pick(EDGES);
+    sendPlane(from, randIdx(from), to, randIdx(to));
+  }
 }
 function startAmbient() {
   if (ambientOn || paused) return;
@@ -408,7 +442,7 @@ function startAmbient() {
   lastSig = ''; prevInst = null; // suppress diff burst; planes come from the timer
   ambientState = buildAmbient();
   render(ambientState, { allocation: [] });
-  sendPlane(...pick(EDGES));
+  emitAmbientPlanes(3);
   ambientTimer = setInterval(ambientStep, 2300);
 }
 function stopAmbient() {

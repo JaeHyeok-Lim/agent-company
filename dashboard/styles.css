@@ -311,9 +311,14 @@ body.lang-ko .plane-label { font-size: 16px; }
 .modal-title .modal-sub { color: var(--muted); font-size: 14px; font-weight: 400; }
 .modal-body h4 { margin: 12px 0 5px; font-size: 14px; color: var(--text); }
 .modal-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.modal-tasks li { display: flex; align-items: center; gap: 9px; font-size: 15px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 11px; }
+.modal-tasks li { font-size: 15px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.modal-tasks .mt-line { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 11px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.modal-tasks .mt-line:hover { background: rgba(255, 255, 255, .04); }
 .modal-tasks .mt-task { flex: 1; min-width: 0; }
 .modal-tasks .mt-st { font-size: 11px; color: var(--muted); text-transform: capitalize; }
+.modal-tasks .mt-caret { font-size: 11px; color: var(--muted); transition: transform .15s ease; }
+.modal-tasks li.open .mt-caret { transform: rotate(90deg); }
+.modal-tasks .mt-detail { padding: 9px 12px 11px; margin: 0 4px 4px; font-size: 13px; line-height: 1.5; color: var(--muted); white-space: pre-wrap; word-break: break-word; border-top: 1px dashed var(--line); background: var(--panel); border-radius: 0 0 5px 5px; }
 .modal-empty { color: var(--muted); font-size: 13px; }
 
 @keyframes screen { 0% { filter: brightness(1); } 50% { filter: brightness(1.5); } 100% { filter: brightness(.85); } }
@@ -394,6 +399,7 @@ body.lang-ko .box-label { font-size: 15px; }
 body.lang-ko .modal-title { font-size: 20px; }
 body.lang-ko .modal-body h4 { font-size: 15px; }
 body.lang-ko .modal-tasks li { font-size: 16px; }
+body.lang-ko .modal-tasks .mt-detail { font-size: 14px; }
 
 /* narrow: rail drops below the floor-plan and goes full width */
 @media (max-width: 880px) {

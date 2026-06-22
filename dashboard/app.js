@@ -13,7 +13,7 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · square office · CEO office · big fonts'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · detailed task modal (click to expand)'; // bump to confirm a hard refresh loaded new code
 
 // ---- i18n (KO / EN) ----
 const langToggle = document.getElementById('langToggle');
@@ -25,7 +25,7 @@ const T = {
     idle: '대기', working: '작업 중', done: '완료', legIdle: '대기/휴식', legWorking: '작업 중', legDone: '완료',
     inTray: '🗂️ 해야 할 작업', warehouse: '📦 완료 창고', none: '없음', more: (n) => `+${n}건`,
     notStaffed: '미배정', planned: (n) => `예정 ×${n}`, agentsN: (n) => `${n}명`,
-    modalSub: '— 한 작업 (이번 세션)', modalEmpty: '아직 한 작업이 없습니다.', teamEmpty: '이번 세션에 아직 팀 작업이 없습니다.',
+    modalSub: '— 한 작업 (이번 세션)', modalEmpty: '아직 한 작업이 없습니다.', teamEmpty: '이번 세션에 아직 팀 작업이 없습니다.', noDetail: '세부 내용이 기록되지 않았습니다.',
     noActive: '대기 중 — 진행 중인 작업 없음', updated: (tm, w, n) => `${tm} 갱신 · 작업중 ${w} / 총 ${n}`,
     ceoTitle: '대표(You) — 클릭하면 팀 작업 보기',
   },
@@ -34,7 +34,7 @@ const T = {
     idle: 'idle', working: 'working', done: 'done', legIdle: 'idle / dozing', legWorking: 'working', legDone: 'done',
     inTray: '🗂️ To do', warehouse: '📦 Done', none: 'none', more: (n) => `+${n} more`,
     notStaffed: 'not staffed', planned: (n) => `planned ×${n}`, agentsN: (n) => `${n} agents`,
-    modalSub: '— work this session', modalEmpty: 'No work yet.', teamEmpty: 'No team work this session yet.',
+    modalSub: '— work this session', modalEmpty: 'No work yet.', teamEmpty: 'No team work this session yet.', noDetail: 'No further detail was recorded.',
     noActive: 'idle — no active work', updated: (tm, w, n) => `updated ${tm} · ${w} working / ${n} total`,
     ceoTitle: 'You (CEO) — click for the team’s work',
   },
@@ -135,11 +135,39 @@ function statusDot(s) {
   if (s === 'done') return '🟢';
   return '⚪';
 }
+// Pull a short, human subject out of the raw task string the hook captured
+// (the Agent `description`/`prompt`). Strips workflow scaffolding ("Slice:", "Goal:")
+// and the first line only, so a row reads "‘<subject>’에 대한 자료 조사" not just "자료 조사".
+function taskSubject(task) {
+  if (!task) return '';
+  let s = String(task).split('\n')[0].trim();
+  s = s.replace(/^(slice|task|goal|subject)\s*[:：]\s*/i, '').trim();
+  return s;
+}
+function taskLabel(x) {
+  const action = roleAction(x.role);
+  const subj = taskSubject(x.task);
+  if (!subj) return action || t('working');
+  const short = subj.length > 64 ? `${subj.slice(0, 64)}…` : subj;
+  // if the captured text already names the action (e.g. "...자료 조사"), don't repeat it
+  if (!action || short.includes(action)) return short;
+  return LANG === 'ko' ? `‘${short}’에 대한 ${action}` : `${action}: “${short}”`;
+}
 function taskListHtml(insts) {
   if (!insts.length) return `<p class="modal-empty">${t('modalEmpty')}</p>`;
   const rank = { working: 0, done: 1, idle: 2 };
   const sorted = insts.slice().sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
-  const rows = sorted.map((x) => `<li><span class="mt-dot">${statusDot(x.status)}</span><span class="mt-task">${escapeHtml(roleAction(x.role))}</span><span class="mt-st">${escapeHtml(t(x.status))}</span></li>`).join('');
+  const rows = sorted.map((x) => {
+    const label = escapeHtml(taskLabel(x));
+    const hasDetail = Boolean(x.task && String(x.task).trim());
+    const detail = hasDetail ? escapeHtml(String(x.task).trim()) : t('noDetail');
+    const caret = `<span class="mt-caret" aria-hidden="true">▸</span>`;
+    return `<li class="mt-row"><button type="button" class="mt-line">` +
+      `<span class="mt-dot">${statusDot(x.status)}</span>` +
+      `<span class="mt-task">${label}</span>` +
+      `<span class="mt-st">${escapeHtml(t(x.status))}</span>${caret}</button>` +
+      `<div class="mt-detail" hidden>${detail}</div></li>`;
+  }).join('');
   return `<ul class="modal-tasks">${rows}</ul>`;
 }
 function openModal(role) {
@@ -172,6 +200,16 @@ function ensureModal() {
   const close = () => { modalEl.hidden = true; };
   wrap.addEventListener('click', (e) => { if (e.target === wrap || e.target.classList.contains('modal-x')) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  // click a task row to expand its full detail (the raw task the hook captured)
+  modalBody.addEventListener('click', (e) => {
+    const line = e.target.closest('.mt-line');
+    if (!line) return;
+    const row = line.closest('.mt-row');
+    const det = row?.querySelector('.mt-detail');
+    if (!det) return;
+    det.hidden = !det.hidden;
+    row.classList.toggle('open', !det.hidden);
+  });
   // delegated: click any element tagged with data-role (card, room, or the CEO figure)
   document.addEventListener('click', (e) => {
     if (e.target.closest('#agent-modal')) return;

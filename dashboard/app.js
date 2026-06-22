@@ -418,25 +418,23 @@ function sendPlane(from, fromIdx, to, toIdx, title) {
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
-  flashAgent(from, fromIdx, 'sending', 700); // 📤 on the specific sender
   const midX = (a.x + b.x) / 2;
-  const midY = (a.y + b.y) / 2 - 7; // arc lift so it glides
-  // near-departure / near-arrival waypoints (8% of the path from each end)
-  const nax = a.x + (b.x - a.x) * 0.08;
-  const nay = a.y + (b.y - a.y) * 0.08;
-  const nbx = a.x + (b.x - a.x) * 0.92;
-  const nby = a.y + (b.y - a.y) * 0.92;
-  // Speed profile: cruise ≈ 0.7× the old speed, dipping to ≈ 0.4× at departure and
-  // arrival so the message label is readable. Linear easing on the two end segments
-  // keeps them slow; ease-in-out across the middle accelerates then decelerates.
+  const midY = (a.y + b.y) / 2 - 5; // gentle arc
+  // Timeline: appear + hover ~1s over the SENDER → fly at an EVEN (linear) speed →
+  // hover ~1s over the RECEIVER → fade out. Lets the label be read at both ends.
+  const DUR = 3600;
   const anim = el.animate([
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0, easing: 'linear' },
-    { left: `${nax}%`, top: `${nay}%`, opacity: 1, offset: 0.13, easing: 'ease-in-out' },
-    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.5, easing: 'ease-in-out' },
-    { left: `${nbx}%`, top: `${nby}%`, opacity: 1, offset: 0.87, easing: 'linear' },
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },
-  ], { duration: 2700, fill: 'forwards' });
-  anim.onfinish = () => { flashAgent(to, toIdx, 'receiving', 900); el.remove(); };
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.04 },                         // fade in over sender
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.28, easing: 'linear' },        // hover ~1s, then depart at even speed
+    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.49, easing: 'linear' },      // mid-flight (arc apex)
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.69 },                           // arrive
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.95 },                           // hover ~1s over receiver
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                              // fade out
+  ], { duration: DUR, fill: 'forwards' });
+  flashAgent(from, fromIdx, 'sending', 1000);                                  // 📤 sender, during the departure hover
+  setTimeout(() => flashAgent(to, toIdx, 'receiving', 1000), Math.round(DUR * 0.69)); // 📥 receiver, on arrival
+  anim.onfinish = () => el.remove();
 }
 function diffHandoffs(prev, cur) {
   if (prev === null) return;

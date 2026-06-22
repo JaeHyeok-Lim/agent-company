@@ -43,6 +43,20 @@ const PROPS = {
   architect: '📐 🖼️', implementer: '🖥️ 🔧', reviewer: '🛡️ ✅', scribe: '🗃️ 📄',
 };
 const FLOORS = ['wood', 'tile', 'carpet'];
+// what each handoff is "about" — shown as a title on the flying paper airplane
+const MESSAGES = {
+  'orchestrator>researcher': 'task brief',
+  'orchestrator>chief-of-staff': 'priorities',
+  'researcher>architect': 'findings',
+  'architect>implementer': 'design spec',
+  'implementer>reviewer': 'PR diff',
+  'reviewer>scribe': 'sign-off',
+  'reviewer>implementer': 'change request',
+  'scribe>orchestrator': 'docs',
+  'chief-of-staff>orchestrator': 'status report',
+  'architect>researcher': 'questions',
+};
+function messageTitle(from, to) { return MESSAGES[`${from}>${to}`] || 'memo'; }
 
 let roster = {};
 let lastSig = '';
@@ -282,7 +296,7 @@ function sendPlane(from, to) {
   const el = document.createElement('div');
   el.className = 'plane';
   el.style.setProperty('--ang', `${ang}deg`);
-  el.innerHTML = planeSVG();
+  el.innerHTML = `<div class="plane-label">${escapeHtml(messageTitle(from, to))}</div>${planeSVG()}`;
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
@@ -347,7 +361,9 @@ const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, arc
 let ambientOn = false;
 let ambientTimer = null;
 let paused = false;
-function ambientModel() {
+let ambientState = null;
+let ambientTickN = 0;
+function buildAmbient() {
   const instances = {};
   for (const [role, n] of Object.entries(AMBIENT_COUNT)) {
     for (let i = 0; i < n; i++) instances[`amb-${role}-${i}`] = { role, status: 'working', task: `${role}` };
@@ -355,15 +371,25 @@ function ambientModel() {
   return { instances, updated: null };
 }
 function ambientStep() {
-  const [from, to] = pick(EDGES);
-  sendPlane(from, to);
+  ambientTickN++;
+  // every few ticks a department "takes a break" (or returns) so idle vs working
+  // motion is both visible in the default view
+  if (ambientState && ambientTickN % 3 === 0) {
+    const role = pick(Object.keys(AMBIENT_COUNT));
+    const ids = Object.keys(ambientState.instances).filter((id) => ambientState.instances[id].role === role);
+    const goIdle = ambientState.instances[ids[0]]?.status === 'working';
+    ids.forEach((id) => { ambientState.instances[id].status = goIdle ? 'idle' : 'working'; });
+    render(ambientState, { allocation: [] });
+  }
+  sendPlane(...pick(EDGES));
 }
 function startAmbient() {
   if (ambientOn || paused) return;
   ambientOn = true;
-  lastSig = ''; prevInst = null; // suppress diff burst; couriers come from the timer
-  render(ambientModel(), { allocation: [] });
-  ambientStep();
+  lastSig = ''; prevInst = null; // suppress diff burst; planes come from the timer
+  ambientState = buildAmbient();
+  render(ambientState, { allocation: [] });
+  sendPlane(...pick(EDGES));
   ambientTimer = setInterval(ambientStep, 2300);
 }
 function stopAmbient() {

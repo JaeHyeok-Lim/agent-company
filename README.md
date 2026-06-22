@@ -38,6 +38,7 @@ agent-company/
    │   ├─ data-analyst.md    # metrics, analysis, experiments
    │   └─ security.md        # AppSec: threat-model + vulnerability review
    ├─ workflows/             # the "processes" — orchestration scripts
+   │   ├─ go.js              # ⭐ the one command: staff → define → … → ship → review → document
    │   ├─ build-feature.js   # research → design → implement → review
    │   ├─ staffed-build.js   # chief-of-staff allocates headcount, team fans out per role
    │   ├─ standup.js         # recon → chief-of-staff briefing
@@ -61,32 +62,32 @@ which the dashboard polls. Open it in one window while you run work in another t
 team light up.
 
 Use the **🎬 Office view** toggle (top of the page) to switch from cards to a **pixel-style
-company floor plan**: a building with a **central corridor** (people stroll up and down it) and
-**department rooms on both sides** — each with a yellow name plaque, a window, a whiteboard, a
-plant, and **human figures** at desks. People **type** while working, **pop a green ✓** when
-done, and **doze with floating z's** when idle. Skin/hair/shirt vary per person.
+company floor plan**: a **square 4×4 grid of department rooms**, grouped by workflow (reflecting
+how real companies place interdependent teams adjacent) — top row leadership (**👑 CEO corner
+office**, orchestrator, chief-of-staff, audit), then Product, Engineering, and Quality+Docs. Each
+room has a **top name-plaque band** (so it never overlaps the people) and **human figures** at
+desks. A working agent turns **sharp with an accent outline glow**; an idle one is **dimmed/grey**;
+a finished one shows a **green ✓**. The current task shows as a caption under each working agent.
 
 **Information handoffs fly as paper airplanes — with the message title attached:** every message
-is a **paper airplane ✈️** that arcs (slowly at takeoff/landing so the label is readable) from
-**one specific agent to another** — not department-to-department — carrying a label of *what* it
-is (`task brief`, `findings`, `design spec`, `PR diff`, `change request`, `status report`,
-`docs`, …). **Many planes fly at once** (one per message in flight). The exact **sending agent
-flashes 📤** and the **receiving agent flashes 📥 and glances up**; each plane and its label are
-tinted with the **sender's department color** so you can trace origins. (This mirrors the real
+is a **paper airplane ✈️** that **hovers ~1s over the sender, then cruises at constant speed** to
+**one specific agent** — not department-to-department — carrying a label of *what* it is
+(`task brief`, `findings`, `design spec`, `PR diff`, `change request`, `status report`, `docs`, …).
+**Many planes fly at once** (one per message in flight). The **sending agent flashes 📤** and the
+**receiving agent flashes 📥**; each plane and its label are tinted with the **sender's department
+color** so you can trace origins. (This mirrors the real
 [communication model](docs/ARCHITECTURE.md#communication-model): orchestrator-mediated,
 structured handoffs.)
 
-Agents sit **centered and evenly spaced** at desks (seated behind a desk with monitor, keyboard,
-and chair, top-down style with shadows). They **type** when working and **doze** when idle, and
-in the ambient loop departments periodically take a break and resume, so both motions are
-visible. Rooms have per-department props and varied floor textures (wood / tile / carpet).
+**Click any room/agent** (or the 👑 CEO) to open a modal of what that agent did this session.
+Each row reads as a **specific subject** — e.g. *"‘OAuth2 PKCE 흐름…’에 대한 자료 조사"* rather than
+just *"researching"* — pulled from the real task the hook captured; **click a row to expand its
+full detail**. A **KO/EN toggle** localizes everything (Korean department names render bold).
 
-**The office animates by default — no button needed.** When no real workflow is running, the
-floor shows an ambient "busy office" loop with couriers continuously moving documents along the
-pipeline (orchestrator → research → design → implement → review → docs, plus reports back up).
-When a real workflow *is* running, the floor reflects live agent status and couriers fire on
-real handoffs. **⏸ Pause motion** freezes everything. The view choice persists and the whole
-thing respects `prefers-reduced-motion`.
+**Motion reflects real work only — no demo/ambient loop.** When agents actually run (hooks →
+`/shared` state) the floor lights up and planes fire on real handoffs; when nothing is running,
+everyone dozes (idle) and no planes fly. The view choice persists and the whole thing respects
+`prefers-reduced-motion`.
 
 > Uses the *Press Start 2P* webfont for the pixel labels (loaded from Google Fonts; falls back
 > to a monospace font offline).

@@ -13,7 +13,7 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · detailed task modal (click to expand)'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · bold KO dept names + docs sync'; // bump to confirm a hard refresh loaded new code
 
 // ---- i18n (KO / EN) ----
 const langToggle = document.getElementById('langToggle');
@@ -356,7 +356,7 @@ function buildFloorPlan() {
     .map(([role, info]) => {
       const R = ROOMS[role];
       const style = `left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}`;
-      const plaque = `<div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(roleName(role))}${role === 'ceo' ? '' : ' <span class="headcount"></span>'}</div>`;
+      const plaque = `<div class="plaque"><span class="pemoji">${info.emoji}</span> <span class="pname">${escapeHtml(roleName(role))}</span>${role === 'ceo' ? '' : ' <span class="headcount"></span>'}</div>`;
       if (role === 'ceo') {
         // the boss's corner office — a 👑 figure, not a worker desk
         return `<div class="room ceo-office" id="room-${role}" data-role="${role}" style="${style}" title="${t('ceoTitle')}">

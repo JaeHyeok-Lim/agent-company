@@ -3,19 +3,28 @@
 ## Org chart
 
 ```
-        You (CEO)
+        👑 You (CEO)
             │  asks / approves
             ▼
    Orchestrator (main session) ──consults──►  chief-of-staff
-            │  delegates execution             (plans, tracks status,
+            │  delegates execution             (plans, staffs 0..N per role,
             │                                   sequences work, reports up)
-   ┌────────┬──────────┬────────────┬──────────┐
-   ▼        ▼          ▼            ▼          ▼
-researcher architect implementer reviewer   scribe
-(read-only (plan/    (write code, (adversarial (docs +
- explore,   design,   run tests)   verify,     /capture to
- sonnet)    opus)     opus)        opus)       brain, sonnet)
+   ┌───────────┬──────────┬───────────┬────────────┬──────────┐
+   ▼           ▼          ▼           ▼            ▼          ▼
+product-mgr researcher  designer   architect  implementer  devops
+ (what/why)  (explore)   (UX)      (design)    (build)     (ship)
+   └───────────┴──────────┴───────────┴────────────┴──────────┘
+   ┌──────────┬───────────┬──────────┐        ┌──────────────────────┐
+   ▼          ▼           ▼          ▼         │ auditor (감사팀):      │
+reviewer   security  data-analyst  scribe     │ reviews the SYSTEM,    │
+(verify)   (AppSec)   (metrics)    (docs)      │ files improvement memos│
+                                               └──────────────────────┘
 ```
+
+The pipeline runs front-to-back (product-manager → researcher → designer → architect →
+implementer → devops → reviewer → security → data-analyst → scribe); the **auditor** is an
+out-of-band oversight role that critiques the company itself rather than sitting in the pipeline.
+Model tiers per role are in the table below.
 
 The **chief-of-staff** is a staff (advisory) role: it organizes and reports but does not
 execute. The orchestrator (or you directly) consults it for status, prioritization, and
@@ -53,6 +62,10 @@ the user) — the orchestrator relays what matters.
 ## Processes (workflows)
 
 `.claude/workflows/*.js` encode deterministic collaboration. The canonical ones:
+- `go.js` ⭐ — **the one command** (`/go <goal>`): the chief-of-staff allocates headcount per
+  role, then it runs **define → research → UX → architecture → implement → ship → review →
+  security → data → document**, skipping any role staffed at 0. Supersedes running
+  `build-feature` / `staffed-build` by hand for most goals.
 - `build-feature.js` — pipelines **research → design → implement → review**, with the review
   stage adversarially verifying before accepting.
 - `standup.js` — **recon → brief**: researcher gathers repo/team state, then the chief-of-staff

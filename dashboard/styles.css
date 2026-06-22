@@ -184,6 +184,7 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .plaque .pemoji { font-size: 14px; font-family: initial; }
 .plaque .headcount { margin-left: auto; font-family: initial; font-size: 11px; color: #5a420f; background: rgba(255, 255, 255, .45); border-radius: 999px; padding: 0 6px; }
 body.lang-ko .plaque { font-size: 13px; }
+body.lang-ko .plaque .pname { font-weight: 700; }
 
 /* simple furniture */
 .decor { position: absolute; z-index: 0; }

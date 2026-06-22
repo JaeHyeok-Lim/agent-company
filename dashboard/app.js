@@ -1,6 +1,6 @@
-// Two views — Cards and Office. The Office view is a top-down floor plan with a central
-// corridor; people sit at desks in department rooms, extras stroll the corridor, and on every
-// real handoff a paper airplane flies the message (with its real task text) between agents.
+// Two views — Cards and Office. The Office view is a top-down floor plan (4×4 grid of
+// department rooms grouped by workflow); people sit at desks, and on every real handoff a
+// paper airplane flies the (localized) message between the specific agents.
 // Motion reflects REAL work only — when agents actually run (hooks → /shared state) the floor
 // lights up; when idle, everyone dozes. No fake/demo motion.
 const POLL_MS = 1500;
@@ -13,7 +13,7 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · 13 roles · i18n'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · square office · CEO office · big fonts'; // bump to confirm a hard refresh loaded new code
 
 // ---- i18n (KO / EN) ----
 const langToggle = document.getElementById('langToggle');
@@ -59,6 +59,7 @@ function applyStrings() {
   set('sub', t('sub')); set('lg-idle', t('legIdle')); set('lg-working', t('legWorking')); set('lg-done', t('legDone'));
   if (langToggle) langToggle.textContent = t('langBtn');
   if (toggle) toggle.textContent = document.body.dataset.view === 'office' ? t('toCards') : t('toOffice');
+  document.body.classList.toggle('lang-ko', LANG === 'ko'); // bigger CJK text via CSS
 }
 function setLang(lang) {
   LANG = lang;
@@ -73,21 +74,24 @@ function setLang(lang) {
 }
 if (langToggle) langToggle.addEventListener('click', () => setLang(LANG === 'ko' ? 'en' : 'ko'));
 
-// floor-plan zones (% of plan): two columns flanking a central corridor at x≈45–55
+// floor-plan zones (% of a square plan)
+// 4×4 grid (square canvas) grouped by workflow + adjacency:
+//  row1 Leadership/oversight (CEO corner office) · row2 Product · row3 Engineering · row4 Quality+Docs
 const ROOMS = {
-  orchestrator:      { x: 3,  y: 2,  w: 40, h: 12 },
-  'product-manager': { x: 3,  y: 15, w: 40, h: 12 },
-  researcher:        { x: 3,  y: 28, w: 40, h: 12 },
-  architect:         { x: 3,  y: 41, w: 40, h: 12 },
-  implementer:       { x: 3,  y: 54, w: 40, h: 12 },
-  reviewer:          { x: 3,  y: 67, w: 40, h: 12 },
-  scribe:            { x: 3,  y: 80, w: 40, h: 12 },
-  'chief-of-staff':  { x: 57, y: 2,  w: 40, h: 12 },
-  designer:          { x: 57, y: 15, w: 40, h: 12 },
-  'data-analyst':    { x: 57, y: 28, w: 40, h: 12 },
-  devops:            { x: 57, y: 41, w: 40, h: 12 },
-  security:          { x: 57, y: 54, w: 40, h: 12 },
-  auditor:           { x: 57, y: 67, w: 40, h: 12 },
+  ceo:               { x: 1.5, y: 2,   w: 22, h: 22 },
+  orchestrator:      { x: 25,  y: 2,   w: 23, h: 22 },
+  'chief-of-staff':  { x: 50,  y: 2,   w: 23, h: 22 },
+  auditor:           { x: 74.5, y: 2,  w: 22, h: 22 },
+  'product-manager': { x: 1.5, y: 26,  w: 22, h: 22 },
+  researcher:        { x: 25,  y: 26,  w: 23, h: 22 },
+  designer:          { x: 50,  y: 26,  w: 23, h: 22 },
+  'data-analyst':    { x: 74.5, y: 26, w: 22, h: 22 },
+  architect:         { x: 1.5, y: 50,  w: 22, h: 22 },
+  implementer:       { x: 25,  y: 50,  w: 23, h: 22 },
+  devops:            { x: 50,  y: 50,  w: 23, h: 22 },
+  reviewer:          { x: 1.5, y: 74,  w: 22, h: 22 },
+  security:          { x: 25,  y: 74,  w: 23, h: 22 },
+  scribe:            { x: 50,  y: 74,  w: 23, h: 22 },
 };
 
 // pipeline order for "done → next" handoff planes (full product flow)
@@ -267,7 +271,6 @@ function card(role, info, instances, planned) {
 // ---- office view: people ----
 const SKINS = ['#f1c9a5', '#e7b58f', '#d49a6a', '#a9744f', '#6f4a31'];
 const HAIRS = ['#2b2b2b', '#4a2f1d', '#6b4423', '#8a8a8a', '#1c1c1c', '#c9a24b'];
-const SHIRTS = ['#5b8def', '#16b1a6', '#f2a541', '#e5534b', '#7c5cff', '#4caf72'];
 function personSVG() {
   return `<svg class="person" viewBox="0 0 56 64" aria-hidden="true">
     <g class="head">
@@ -298,19 +301,6 @@ function workstation(info, w, calm, seed) {
     ${cap ? `<div class="task-cap">${cap}</div>` : ''}
   </div>`;
 }
-// a small standing/walking person (no desk) for the corridor + couriers
-function walkerSVG(shirt, skin, hair, withDoc) {
-  return `<svg viewBox="0 0 22 32" aria-hidden="true"><g class="cwalk">
-    <circle cx="11" cy="5.5" r="4" style="fill:${skin}"/>
-    <path d="M7 5.5 a4 4 0 0 1 8 0 z" style="fill:${hair}"/>
-    <rect x="6.5" y="10" width="9" height="11" rx="3" style="fill:${shirt}"/>
-    <rect class="leg-l" x="8" y="21" width="2.4" height="8" rx="1.2" style="fill:#3a4150"/>
-    <rect class="leg-r" x="11.6" y="21" width="2.4" height="8" rx="1.2" style="fill:#3a4150"/>
-    ${withDoc ? `<rect class="doc" x="7.5" y="13" width="7" height="9" rx="1"/>
-    <line class="docl" x1="9" y1="16" x2="13" y2="16"/><line class="docl" x1="9" y1="18.5" x2="13" y2="18.5"/>` : ''}
-  </g></svg>`;
-}
-
 // a paper airplane (points right by default; rotated toward its target in flight)
 function planeSVG() {
   return `<svg class="paper" viewBox="0 0 28 18" aria-hidden="true"><g class="glide">
@@ -327,23 +317,21 @@ function buildFloorPlan() {
     .filter(([role]) => ROOMS[role])
     .map(([role, info]) => {
       const R = ROOMS[role];
+      const style = `left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}`;
+      const plaque = `<div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(roleName(role))}${role === 'ceo' ? '' : ' <span class="headcount"></span>'}</div>`;
+      if (role === 'ceo') {
+        // the boss's corner office — a 👑 figure, not a worker desk
+        return `<div class="room ceo-office" id="room-${role}" data-role="${role}" style="${style}" title="${t('ceoTitle')}">
+          ${plaque}<div class="floor"></div><div class="ceo-fig">👑</div>
+        </div>`;
+      }
       const floorClass = `floor-${FLOORS[roleSeed(role) % FLOORS.length]}`;
-      return `<div class="room ${floorClass}" id="room-${role}" data-role="${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
+      return `<div class="room ${floorClass}" id="room-${role}" data-role="${role}" style="${style}">
         ${roomDecor}
-        <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(roleName(role))} <span class="headcount"></span></div>
+        ${plaque}
         <div class="floor"></div>
       </div>`;
     }).join('');
-  // central corridor with strolling people
-  const walkers = [
-    { d: 7.5, dl: 0, up: false },
-    { d: 9, dl: -3, up: true },
-    { d: 8.2, dl: -5, up: false },
-  ].map((wk, i) => {
-    const s = walkerSVG(SHIRTS[(i * 2) % SHIRTS.length], SKINS[(i + 1) % SKINS.length], HAIRS[i % HAIRS.length], false);
-    return `<div class="walker ${wk.up ? 'up' : ''}" style="animation-duration:${wk.d}s;animation-delay:${wk.dl}s;left:${42 + i * 6}%">${s}</div>`;
-  }).join('');
-  const corridor = `<div class="corridor">${walkers}</div>`;
 
   const rail = `<aside class="task-rail">
     <section class="rail-sec in-tray">
@@ -355,10 +343,8 @@ function buildFloorPlan() {
       <div class="shelves"></div>
     </section>
   </aside>`;
-  office.innerHTML = `<div class="office-wrap"><div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>${rail}</div>`;
+  office.innerHTML = `<div class="office-wrap"><div class="floor-plan">${rooms}<div class="couriers"></div></div>${rail}</div>`;
   floorPlanEl = office.querySelector('.floor-plan');
-  // CEO (you) — an overseeing figure at the top of the floor; click it for the team's work
-  floorPlanEl.insertAdjacentHTML('beforeend', `<div class="ceo" data-role="ceo" title="${t('ceoTitle')}"><span class="ceo-fig">👑</span><span class="ceo-tag">You</span></div>`);
   courierLayer = office.querySelector('.couriers');
   slipsEl = office.querySelector('.slips');
   shelvesEl = office.querySelector('.shelves');
@@ -371,7 +357,7 @@ function buildFloorPlan() {
 function updateRooms(entries) {
   for (const [role, info, instances, planned] of entries) {
     const r = roomEls[role];
-    if (!r) continue;
+    if (!r || role === 'ceo') continue; // CEO office is static (👑), no worker desks
     const calm = !!(info.boss || info.manager);
     const crew = crewFor(instances, planned).slice(0, ROOM_CREW);
     const base = roleSeed(role);
@@ -422,7 +408,6 @@ function updateTaskBoard(all) {
 
 // ---- couriers (document handoffs), routed through the corridor ----
 function centerOf(role) {
-  if (role === 'ceo') return { x: 50, y: 2 }; // the CEO figure at the top of the floor
   const R = ROOMS[role] || ROOMS.orchestrator;
   return { x: R.x + R.w / 2, y: R.y + R.h / 2 };
 }
@@ -449,7 +434,7 @@ function agentCenter(role, idx) {
   };
 }
 function flashAgent(role, idx, cls, ms) {
-  const ws = role === 'ceo' ? floorPlanEl?.querySelector('.ceo') : agentEl(role, idx);
+  const ws = role === 'ceo' ? roomEls.ceo?.el : agentEl(role, idx);
   if (!ws) return;
   ws.classList.remove(cls);
   ws.getBoundingClientRect(); // restart the flash

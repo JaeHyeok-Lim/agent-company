@@ -421,25 +421,22 @@ function sendPlane(from, fromIdx, to, toIdx, title) {
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
-  const midX = (a.x + b.x) / 2;
-  const midY = (a.y + b.y) / 2 - 5; // gentle arc
-  // Sit FULLY STILL over the sender for exactly 1s, then move at a CONSTANT speed
-  // (flight time ∝ distance) to the receiver, then fade. No arrival pause.
+  // Sit FULLY STILL over the sender for exactly 1s (visible the whole time), then move in
+  // ONE straight line at a CONSTANT speed (flight time ∝ distance → same speed for every
+  // plane, no mid-flight slow-down), then fade. No arc, no arrival pause.
   const dx = b.x - a.x;
-  const dy = (b.y - a.y) * 0.625; // aspect-correct the % space
+  const dy = (b.y - a.y) * 0.625; // aspect-correct the % space (plan is 16:10)
   const dist = Math.hypot(dx, dy);
   const HOVER = 1000;
-  const FLY = Math.max(550, Math.round(dist * 28)); // ~28ms per % unit → same speed for all planes
-  const FADE = 320;
+  const FLY = Math.max(600, Math.round(dist * 28)); // ~28ms per % unit → same speed for all planes
+  const FADE = 300;
   const DUR = HOVER + FLY + FADE;
   const k = (ms) => ms / DUR;
   const anim = el.animate([
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: k(120) },                                  // appear quickly
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: k(HOVER), easing: 'linear' },              // hold 1s still, then depart
-    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: k(HOVER + FLY / 2), easing: 'linear' },  // constant-speed flight
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: k(HOVER + FLY) },                           // arrive
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                                        // fade out
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0 },                          // appear instantly, fully visible
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: k(HOVER), easing: 'linear' },  // hold still a full 1s, then depart
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: k(HOVER + FLY) },               // straight, constant-speed arrival
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                            // fade out on arrival
   ], { duration: DUR, fill: 'forwards' });
   flashAgent(from, fromIdx, 'sending', HOVER);                                  // 📤 sender glows during the 1s hold
   setTimeout(() => flashAgent(to, toIdx, 'receiving', 700), HOVER + FLY);       // 📥 receiver, on arrival

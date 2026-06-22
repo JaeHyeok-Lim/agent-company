@@ -120,6 +120,7 @@ footer {
 }
 .legend { display: inline-flex; align-items: center; gap: 6px; }
 .hint { margin-left: auto; }
+.build { color: var(--muted); font-size: 11px; opacity: .65; margin-left: 10px; }
 code { background: var(--panel-2); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); }
 
 /* ---- view toggle ---- */

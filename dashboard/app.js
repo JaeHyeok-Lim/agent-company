@@ -12,6 +12,8 @@ const grid = document.getElementById('grid');
 const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
+const buildTag = document.getElementById('build');
+if (buildTag) buildTag.textContent = 'build · 1s hold · uniform flight'; // bump to confirm a hard refresh loaded new code
 
 // floor-plan zones (% of plan): two columns flanking a central corridor at x≈45–55
 const ROOMS = {

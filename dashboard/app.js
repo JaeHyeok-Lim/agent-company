@@ -278,13 +278,13 @@ function centerOf(role) {
   const R = ROOMS[role] || ROOMS.orchestrator;
   return { x: R.x + R.w / 2, y: R.y + R.h / 2 };
 }
-function receive(role) {
+function flashRoom(role, cls, ms = 800) {
   const r = roomEls[role];
   if (!r) return;
-  r.el.classList.remove('receiving');
-  r.el.getBoundingClientRect();
-  r.el.classList.add('receiving');
-  setTimeout(() => r.el.classList.remove('receiving'), 800);
+  r.el.classList.remove(cls);
+  r.el.getBoundingClientRect(); // restart the flash animation
+  r.el.classList.add(cls);
+  setTimeout(() => r.el.classList.remove(cls), ms);
 }
 function sendPlane(from, to) {
   if (!courierLayer || paused || !ROOMS[from] || !ROOMS[to]) return;
@@ -296,10 +296,12 @@ function sendPlane(from, to) {
   const el = document.createElement('div');
   el.className = 'plane';
   el.style.setProperty('--ang', `${ang}deg`);
+  el.style.setProperty('--from', roster[from]?.color || '#9aa3b2'); // tint the plane by sender
   el.innerHTML = `<div class="plane-label">${escapeHtml(messageTitle(from, to))}</div>${planeSVG()}`;
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
+  flashRoom(from, 'sending', 700); // 📤 at the sender as the plane launches
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2 - 7; // arc lift so it glides
   // near-departure / near-arrival waypoints (8% of the path from each end)
@@ -317,7 +319,7 @@ function sendPlane(from, to) {
     { left: `${nbx}%`, top: `${nby}%`, opacity: 1, offset: 0.87, easing: 'linear' },
     { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },
   ], { duration: 2700, fill: 'forwards' });
-  anim.onfinish = () => { receive(to); el.remove(); };
+  anim.onfinish = () => { flashRoom(to, 'receiving', 900); el.remove(); };
 }
 function diffHandoffs(prev, cur) {
   if (prev === null) return;

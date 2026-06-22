@@ -176,9 +176,17 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .room.unstaffed { opacity: .5; }
 .room.receiving { box-shadow: 0 0 0 2px #4caf72, 0 0 16px rgba(76, 175, 114, .5); }
 .room.receiving::after {
-  content: '📥'; position: absolute; bottom: 4px; right: 6px; font-size: 14px; z-index: 5;
-  animation: rfade .8s ease forwards;
+  content: '📥'; position: absolute; bottom: 4px; right: 6px; font-size: 15px; z-index: 5;
+  animation: rfade .9s ease forwards;
 }
+.room.sending { box-shadow: 0 0 0 2px #f5c451, 0 0 16px rgba(245, 196, 81, .45); }
+.room.sending::before {
+  content: '📤'; position: absolute; bottom: 4px; left: 6px; font-size: 15px; z-index: 5;
+  animation: rfade .7s ease forwards;
+}
+/* receiver looks up briefly when a plane lands */
+.room.receiving .person { animation: glance .5s ease; }
+@keyframes glance { 0% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-3px); } 100% { transform: translateX(-50%) translateY(0); } }
 @keyframes rfade { 0% { opacity: 0; transform: translateY(4px); } 25% { opacity: 1; } 100% { opacity: 0; } }
 
 /* yellow hanging name plaque (pixel sign) */
@@ -278,14 +286,14 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
 .plane .glide { transform-box: fill-box; transform-origin: 50% 50%; animation: planeWobble .6s ease-in-out infinite; }
 .plane .pw { fill: #ffffff; }
 .plane .pb { fill: #d6dbe4; }
-.plane .pc { fill: #eef1f6; }
+.plane .pc { fill: var(--from, #eef1f6); }
 .plane path { stroke: #aab3c2; stroke-width: .4; stroke-linejoin: round; }
 /* the message title carried by the plane (stays upright while the plane rotates) */
 .plane-label {
   position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px;
   white-space: nowrap; font-size: 9px; line-height: 1; color: #eaf6ff;
-  background: rgba(14, 20, 28, .92); border: 1px solid #3a4150; border-radius: 6px; padding: 2px 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  background: rgba(14, 20, 28, .92); border: 1px solid #3a4150; border-left: 3px solid var(--from, #3a4150);
+  border-radius: 6px; padding: 2px 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
 }
 @keyframes planeWobble { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-1px) rotate(4deg); } }
 

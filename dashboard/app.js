@@ -27,12 +27,7 @@ const ROOMS = {
 
 const NEXT = { researcher: 'architect', architect: 'implementer', implementer: 'reviewer', reviewer: 'scribe', scribe: 'orchestrator', 'chief-of-staff': 'orchestrator' };
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
-// department props (wall/shelf items) and floor textures, for the office look
-const PROPS = {
-  orchestrator: '🏆 📊', 'chief-of-staff': '🗂️ 📋', researcher: '📚 🔍',
-  architect: '📐 🖼️', implementer: '🖥️ 🔧', reviewer: '🛡️ ✅', scribe: '🗃️ 📄',
-  auditor: '🕵️ 📋',
-};
+// per-department floor textures (kept; the clutter prop icons were removed)
 const FLOORS = ['wood', 'tile', 'carpet'];
 // what each handoff is "about" — shown as a title on the flying paper airplane
 const MESSAGES = {
@@ -98,9 +93,8 @@ function workerClass(status, calm) {
   return calm ? 'doze calm' : 'doze';
 }
 function taskCaption(w) {
-  if (w.status === 'working') return escapeHtml((w.task || 'working…').slice(0, 26));
-  if (w.status === 'done') return 'done ✓';
-  return 'idle';
+  // only show the task caption while actually working — it disappears when done/idle
+  return w.status === 'working' ? escapeHtml((w.task || '').slice(0, 26)) : '';
 }
 function podHead(instances, crewLen, planned) {
   if (instances.length) return `${crewLen}${instances.length > CREW_CAP ? '+' : ''}`;
@@ -183,13 +177,14 @@ function workstation(info, w, calm, seed) {
   const cls = workerClass(w.status, calm);
   const skin = SKINS[seed % SKINS.length];
   const hair = HAIRS[(seed * 3 + 1) % HAIRS.length];
+  const cap = taskCaption(w);
   return `<div class="workstation ${cls}" style="--skin:${skin};--hair:${hair}">
     <div class="zzz">z</div>
     <div class="badge">✓</div>
     ${personSVG()}
     <div class="monitor"></div>
     <div class="desk"></div>
-    <div class="task-cap">${taskCaption(w)}</div>
+    ${cap ? `<div class="task-cap">${cap}</div>` : ''}
   </div>`;
 }
 // a small standing/walking person (no desk) for the corridor + couriers
@@ -216,7 +211,7 @@ function planeSVG() {
 
 // ---- office view: floor plan (built once, updated in place) ----
 function buildFloorPlan() {
-  const roomDecor = '<div class="decor window"></div><div class="decor board"></div><div class="decor plant">🪴</div>';
+  const roomDecor = '<div class="decor window"></div><div class="decor board"></div>';
   const rooms = Object.entries(roster)
     .filter(([role]) => ROOMS[role])
     .map(([role, info]) => {
@@ -224,7 +219,6 @@ function buildFloorPlan() {
       const floorClass = `floor-${FLOORS[roleSeed(role) % FLOORS.length]}`;
       return `<div class="room ${floorClass}" id="room-${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
         ${roomDecor}
-        <div class="props">${PROPS[role] || ''}</div>
         <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
         <div class="floor"></div>
       </div>`;
@@ -421,7 +415,10 @@ function render(state, alloc) {
   };
   const entries = Object.entries(roster).map(([role, info]) => [role, info, all.filter((x) => x.role === role), plannedOf(role)]);
 
-  const sig = entries.map(([role, , inst, planned]) => `${role}:${inst.map((x) => x.status).join(',')}|${planned ?? '-'}`).join(';');
+  const sig = entries.map(([role, , inst, planned]) => {
+    const items = inst.map((x) => `${x.status}~${x.task || ''}`).join(',');
+    return `${role}:${items}|${planned ?? '-'}`;
+  }).join(';');
   if (sig !== lastSig) {
     grid.innerHTML = entries.map((e) => card(...e)).join('');
     if (!floorBuilt) buildFloorPlan();

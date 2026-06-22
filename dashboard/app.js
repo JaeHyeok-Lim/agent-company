@@ -302,13 +302,21 @@ function sendPlane(from, to) {
   courierLayer.appendChild(el);
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2 - 7; // arc lift so it glides
+  // near-departure / near-arrival waypoints (8% of the path from each end)
+  const nax = a.x + (b.x - a.x) * 0.08;
+  const nay = a.y + (b.y - a.y) * 0.08;
+  const nbx = a.x + (b.x - a.x) * 0.92;
+  const nby = a.y + (b.y - a.y) * 0.92;
+  // Speed profile: cruise ≈ 0.7× the old speed, dipping to ≈ 0.4× at departure and
+  // arrival so the message label is readable. Linear easing on the two end segments
+  // keeps them slow; ease-in-out across the middle accelerates then decelerates.
   const anim = el.animate([
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.08 },
-    { left: `${midX}%`, top: `${midY}%`, offset: 0.5 },
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.9 },
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0, easing: 'linear' },
+    { left: `${nax}%`, top: `${nay}%`, opacity: 1, offset: 0.13, easing: 'ease-in-out' },
+    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.5, easing: 'ease-in-out' },
+    { left: `${nbx}%`, top: `${nby}%`, opacity: 1, offset: 0.87, easing: 'linear' },
     { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },
-  ], { duration: 1700, easing: 'ease-in-out', fill: 'forwards' });
+  ], { duration: 2700, fill: 'forwards' });
   anim.onfinish = () => { receive(to); el.remove(); };
 }
 function diffHandoffs(prev, cur) {

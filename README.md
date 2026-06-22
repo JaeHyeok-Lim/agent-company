@@ -90,6 +90,18 @@ The **chief-of-staff** decides how many agents each role gets for a goal (0 when
 2–4 for large / bug-prone / correctness-critical work). Run it end-to-end with the
 `staffed-build` workflow — it staffs the goal, then fans out that many agents per phase.
 
+## Use it from any project
+
+```
+npm run promote     # copies agents + workflows + skill into ~/.claude/
+```
+
+Promotes the whole company to your user-level Claude config so the roles
+(`researcher`, `architect`, …) and workflows (`build-feature`, `staffed-build`,
+`standup`) are callable in **every** Claude Code project — no per-folder setup.
+(The live dashboard + hooks stay project-local; run `npm run dashboard` here to watch.)
+Re-run after editing `.claude/` to refresh the global copies.
+
 ## Quick start
 
 From a Claude Code session in this directory:

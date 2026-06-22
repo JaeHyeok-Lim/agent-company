@@ -1,9 +1,8 @@
 // Two views — Cards and Office. The Office view is a top-down floor plan with a central
 // corridor; people sit at desks in department rooms, extras stroll the corridor, and on every
-// handoff a paper airplane flies a message from one department to another.
-// The office ALWAYS animates by default; when a real workflow is active it reflects real state,
-// otherwise it runs an ambient "busy office" loop. The Pause button freezes all motion.
-//   roster.json / agents.json / allocation.json drive the data.
+// real handoff a paper airplane flies the message (with its real task text) between agents.
+// Motion reflects REAL work only — when agents actually run (hooks → /shared state) the floor
+// lights up; when idle, everyone dozes. No fake/demo motion.
 const POLL_MS = 1500;
 const CAP = 12;
 const CREW_CAP = 8;
@@ -13,7 +12,6 @@ const grid = document.getElementById('grid');
 const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
-const pauseBtn = document.getElementById('simToggle');
 
 // floor-plan zones (% of plan): two columns flanking a central corridor at x≈45–55
 const ROOMS = {
@@ -29,15 +27,6 @@ const ROOMS = {
 
 const NEXT = { researcher: 'architect', architect: 'implementer', implementer: 'reviewer', reviewer: 'scribe', scribe: 'orchestrator', 'chief-of-staff': 'orchestrator' };
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
-// edges the ambient loop sends documents along (pipeline + reports + feedback)
-const EDGES = [
-  ['orchestrator', 'researcher'], ['orchestrator', 'chief-of-staff'],
-  ['researcher', 'architect'], ['architect', 'implementer'],
-  ['implementer', 'reviewer'], ['reviewer', 'scribe'],
-  ['scribe', 'orchestrator'], ['chief-of-staff', 'orchestrator'],
-  ['architect', 'researcher'], ['reviewer', 'implementer'],
-  ['auditor', 'orchestrator'], ['orchestrator', 'auditor'],
-];
 // department props (wall/shelf items) and floor textures, for the office look
 const PROPS = {
   orchestrator: '🏆 📊', 'chief-of-staff': '🗂️ 📋', researcher: '📚 🔍',
@@ -80,7 +69,6 @@ async function getJSON(url) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ---- view toggle (persisted) ----
 function setView(v) {
@@ -445,99 +433,19 @@ function render(state, alloc) {
   }
 
   const working = all.filter((x) => x.status === 'working').length;
-  let status;
-  if (state.updated) status = `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`;
-  else if (demoMode) status = 'demo motion (no real work)';
-  else status = 'idle — no active work';
-  updated.textContent = status;
+  updated.textContent = state.updated
+    ? `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`
+    : 'idle — no active work';
 }
 
-// ---- ambient "busy office" loop (default ON in office view) ----
-const AMBIENT_COUNT = { orchestrator: 1, 'chief-of-staff': 1, researcher: 3, architect: 2, implementer: 3, reviewer: 2, scribe: 2, auditor: 1 };
-const SAMPLE_TASKS = {
-  orchestrator: ['plan', 'route'],
-  'chief-of-staff': ['staffing', 'status'],
-  researcher: ['scan auth', 'map data', 'API survey'],
-  architect: ['design', 'patterns', 'API spec'],
-  implementer: ['module A', 'endpoints', 'edge fix'],
-  reviewer: ['review', 'edge cases', 'repro'],
-  scribe: ['README', 'changelog'],
-  auditor: ['scan system', 'draft memo', 'risk check'],
-};
-let ambientOn = false;
-let ambientTimer = null;
-let demoMode = false; // OFF by default → motion reflects only real work
-let ambientState = null;
-let ambientTickN = 0;
-function buildAmbient() {
-  const instances = {};
-  for (const [role, n] of Object.entries(AMBIENT_COUNT)) {
-    for (let i = 0; i < n; i++) instances[`amb-${role}-${i}`] = { role, status: 'working', task: (SAMPLE_TASKS[role] && pick(SAMPLE_TASKS[role])) || role };
-  }
-  return { instances, updated: null };
-}
-function ambientStep() {
-  ambientTickN++;
-  // every few ticks a department "takes a break" (or returns) so idle vs working
-  // motion is both visible in the default view
-  if (ambientState && ambientTickN % 3 === 0) {
-    const role = pick(Object.keys(AMBIENT_COUNT));
-    const ids = Object.keys(ambientState.instances).filter((id) => ambientState.instances[id].role === role);
-    const goIdle = ambientState.instances[ids[0]]?.status === 'working';
-    ids.forEach((id) => { ambientState.instances[id].status = goIdle ? 'idle' : 'working'; });
-    render(ambientState, { allocation: [] });
-  }
-  emitAmbientPlanes(2 + Math.floor(Math.random() * 2)); // 2–3 concurrent messages each tick
-}
-function emitAmbientPlanes(k) {
-  for (let i = 0; i < k; i++) {
-    const [from, to] = pick(EDGES);
-    sendPlane(from, randIdx(from), to, randIdx(to));
-  }
-}
-function startAmbient() {
-  if (ambientOn) return;
-  ambientOn = true;
-  lastSig = ''; prevInst = null; // suppress diff burst; planes come from the timer
-  ambientState = buildAmbient();
-  render(ambientState, { allocation: [] });
-  emitAmbientPlanes(3);
-  ambientTimer = setInterval(ambientStep, 2300);
-}
-function stopAmbient() {
-  ambientOn = false;
-  clearInterval(ambientTimer);
-  ambientTimer = null;
-}
-
+// ---- live tick: the office reflects REAL work only (no fake/demo motion) ----
 async function tick() {
   let state = { instances: {}, updated: null };
   let alloc = { allocation: [] };
-  try { state = await getJSON('/shared/agents.json'); } catch { /* none */ }
-  try { alloc = await getJSON('/shared/allocation.json'); } catch { /* none */ }
-  const active = Object.values(state.instances || {}).some((x) => x.status === 'working');
-  const inOffice = document.body.dataset.view === 'office';
-
-  // Motion reflects REAL work by default: render live state (working agents move, idle
-  // agents doze, planes fire only on real handoffs with the real task text). The ambient
-  // "busy office" showcase runs only when Demo mode is ON and nothing real is happening.
-  if (inOffice && demoMode && !active) {
-    startAmbient();
-  } else {
-    stopAmbient();
-    render(state, alloc);
-  }
+  try { state = await getJSON('/shared/agents.json'); } catch { /* none yet */ }
+  try { alloc = await getJSON('/shared/allocation.json'); } catch { /* none yet */ }
+  render(state, alloc);
 }
-
-// ---- demo motion toggle (default OFF → the floor only animates for real work) ----
-function setDemo(on) {
-  demoMode = on;
-  pauseBtn.textContent = on ? '⏹ Stop demo' : '🎬 Demo motion';
-  if (floorPlanEl) floorPlanEl.classList.toggle('demo', on);
-  if (!on) stopAmbient();
-  tick();
-}
-pauseBtn.addEventListener('click', () => setDemo(!demoMode));
 
 // ---- boot ----
 try {

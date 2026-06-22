@@ -136,8 +136,6 @@ code { background: var(--panel-2); padding: 1px 6px; border-radius: 6px; border:
 #office { display: none; }
 body[data-view="office"] #grid { display: none; }
 body[data-view="office"] #office { display: block; }
-.sim { display: none; }
-body[data-view="office"] .sim { display: inline-block; }
 
 /* ---- office (company) view: pixel-style floor plan with a central corridor ---- */
 .office { padding: 0 14px; }
@@ -155,10 +153,7 @@ body[data-view="office"] { background: radial-gradient(150% 110% at 50% -5%, #1c
   box-shadow: 0 0 0 3px #2a2f3c, inset 0 0 80px rgba(0, 0, 0, .5);
   image-rendering: pixelated;
 }
-/* corridor strollers are decorative (not real work) → only in Demo mode */
-.floor-plan:not(.demo) .corridor { display: none; }
-
-/* central corridor + strolling people */
+/* central corridor + strolling people (ambient office life) */
 .corridor {
   position: absolute; left: 44%; top: 2%; width: 12%; height: 96%; z-index: 1;
   background: repeating-linear-gradient(0deg, #8a6a44 0 16px, #7d5f3c 16px 32px);

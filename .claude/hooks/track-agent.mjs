@@ -12,6 +12,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const mode = process.argv[2] || 'pre';
+// AUDIT-0002: opt-out switch — set AGENT_COMPANY_TRACK=0|off|false to disable tracking globally
+if (['0', 'off', 'false'].includes((process.env.AGENT_COMPANY_TRACK || '').toLowerCase())) process.exit(0);
 const here = dirname(fileURLToPath(import.meta.url));
 const stateFile = join(here, 'agents.json');
 const MAX_INSTANCES = 60;

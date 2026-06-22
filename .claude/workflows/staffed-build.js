@@ -40,7 +40,9 @@ const plan = await agent(
   `Allocate headcount across the worker roles (researcher, architect, implementer, reviewer, ` +
   `scribe) for this goal. Use 0 where a role isn't needed; allocate 2-4 where the work is large/` +
   `parallelizable, bug-prone, or correctness-critical, and split it into one task slice per ` +
-  `instance. Persist the plan to .claude/state/allocation.json and docs/staffing.md, and return ` +
+  `instance. Persist the plan to .claude/state/allocation.json, docs/staffing.md, AND the shared ` +
+  `~/.claude/agent-company/allocation.json (so the dashboard shows planned headcount from any ` +
+  `project — create the dir if missing), and return ` +
   `the allocation.\n\nGoal:\n${goal}`,
   { agentType: 'chief-of-staff', phase: 'Staff', schema: ALLOCATION },
 )

@@ -6,7 +6,8 @@
   "description": "A reusable multi-agent company on Claude Code primitives, with a live character dashboard.",
   "scripts": {
     "dashboard": "node dashboard/serve.mjs",
-    "promote": "node scripts/promote.mjs"
+    "promote": "node scripts/promote.mjs",
+    "check": "node scripts/check.mjs"
   },
   "license": "MIT"
 }

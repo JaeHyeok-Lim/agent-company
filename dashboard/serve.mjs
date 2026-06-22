@@ -24,20 +24,25 @@ createServer(async (req, res) => {
   let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
   if (urlPath === '/') urlPath = '/dashboard/index.html';
 
-  // /shared/<file> → the global shared state in ~/.claude/agent-company/
+  // /shared/<file> → global shared state (~/.claude/agent-company/), with a
+  // fallback to the project-local .claude/state/ copy (AUDIT-0001).
   if (urlPath.startsWith('/shared/')) {
-    const shared = normalize(join(sharedDir, urlPath.slice('/shared/'.length)));
+    const name = urlPath.slice('/shared/'.length);
+    const shared = normalize(join(sharedDir, name));
     if (shared !== sharedDir && !shared.startsWith(sharedDir + sep)) {
       res.writeHead(403); res.end('forbidden'); return;
     }
-    try {
-      const data = await readFile(shared);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end(data);
-    } catch {
-      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify({ error: 'no shared state yet', path: urlPath }));
+    const fallback = normalize(join(root, '.claude', 'state', name));
+    for (const f of [shared, fallback]) {
+      try {
+        const data = await readFile(f);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(data);
+        return;
+      } catch { /* try next */ }
     }
+    res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'no shared state yet', path: urlPath }));
     return;
   }
 

@@ -68,6 +68,8 @@ let prevInst = null;
 let floorBuilt = false;
 let courierLayer = null;
 let floorPlanEl = null;
+let slipsEl = null;
+let shelvesEl = null;
 const roomEls = {};
 
 async function getJSON(url) {
@@ -250,9 +252,21 @@ function buildFloorPlan() {
   }).join('');
   const corridor = `<div class="corridor">${walkers}</div>`;
 
-  office.innerHTML = `<div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>`;
+  const rail = `<aside class="task-rail">
+    <section class="rail-sec in-tray">
+      <h3 class="rail-title">🗂️ 해야 할 작업</h3>
+      <div class="slips"></div>
+    </section>
+    <section class="rail-sec warehouse">
+      <h3 class="rail-title">📦 완료 창고</h3>
+      <div class="shelves"></div>
+    </section>
+  </aside>`;
+  office.innerHTML = `<div class="office-wrap"><div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>${rail}</div>`;
   floorPlanEl = office.querySelector('.floor-plan');
   courierLayer = office.querySelector('.couriers');
+  slipsEl = office.querySelector('.slips');
+  shelvesEl = office.querySelector('.shelves');
   for (const role of Object.keys(roster)) {
     const el = document.getElementById(`room-${role}`);
     if (el) roomEls[role] = { el, floor: el.querySelector('.floor'), head: el.querySelector('.headcount') };
@@ -269,6 +283,47 @@ function updateRooms(entries) {
     r.floor.innerHTML = crew.map((w, i) => workstation(info, w, calm, base + i)).join('');
     r.head.textContent = podHead(instances, crew.length, planned);
     r.el.classList.toggle('unstaffed', planned === 0);
+  }
+}
+
+// ---- task rail: in-tray (paper slips) + warehouse (boxes on shelves) ----
+function infoFor(role) {
+  return roster[role] || { name: role, emoji: '👤', color: '#9aa3b2' };
+}
+function moreLine(extra) {
+  return extra > 0 ? `<div class="rail-more">+${extra} more</div>` : '';
+}
+function slipHtml(inst) {
+  const info = infoFor(inst.role);
+  const task = escapeHtml(inst.task || 'working…');
+  return `<div class="slip" style="--accent:${info.color}">
+    <div class="slip-fold"></div>
+    <div class="slip-who"><span class="slip-emoji">${info.emoji}</span> ${escapeHtml(info.name)}</div>
+    <div class="slip-task">${task}</div>
+  </div>`;
+}
+function boxHtml(inst) {
+  const info = infoFor(inst.role);
+  const task = escapeHtml(inst.task || 'done');
+  return `<div class="box" style="--accent:${info.color}" title="${task}">
+    <span class="box-emoji">${info.emoji}</span>
+    <span class="box-label">${task}</span>
+  </div>`;
+}
+function updateTaskBoard(all) {
+  const working = all.filter((x) => x.status === 'working');
+  const done = all.filter((x) => x.status === 'done').reverse(); // most recent first
+  if (working.length) {
+    const shown = working.slice(0, CAP).map((x) => slipHtml(x)).join('');
+    slipsEl.innerHTML = shown + moreLine(working.length - CAP);
+  } else {
+    slipsEl.innerHTML = '<div class="rail-empty">없음</div>';
+  }
+  if (done.length) {
+    const shown = done.slice(0, CAP).map((x) => boxHtml(x)).join('');
+    shelvesEl.innerHTML = shown + moreLine(done.length - CAP);
+  } else {
+    shelvesEl.innerHTML = '<div class="rail-empty">없음</div>';
   }
 }
 
@@ -383,6 +438,7 @@ function render(state, alloc) {
     grid.innerHTML = entries.map((e) => card(...e)).join('');
     if (!floorBuilt) buildFloorPlan();
     updateRooms(entries);
+    updateTaskBoard(all);
     diffHandoffs(prevInst, state.instances || {});
     prevInst = state.instances || {};
     lastSig = sig;

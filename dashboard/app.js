@@ -423,19 +423,26 @@ function sendPlane(from, fromIdx, to, toIdx, title) {
   courierLayer.appendChild(el);
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2 - 5; // gentle arc
-  // Timeline: appear + hover ~1.3s over the SENDER → fly at an EVEN (linear) speed →
-  // arrive and fade out immediately (no mid/arrival pause).
-  const DUR = 3200;
+  // Sit FULLY STILL over the sender for exactly 1s, then move at a CONSTANT speed
+  // (flight time ∝ distance) to the receiver, then fade. No arrival pause.
+  const dx = b.x - a.x;
+  const dy = (b.y - a.y) * 0.625; // aspect-correct the % space
+  const dist = Math.hypot(dx, dy);
+  const HOVER = 1000;
+  const FLY = Math.max(550, Math.round(dist * 28)); // ~28ms per % unit → same speed for all planes
+  const FADE = 320;
+  const DUR = HOVER + FLY + FADE;
+  const k = (ms) => ms / DUR;
   const anim = el.animate([
     { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.03 },                         // fade in over sender
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.41, easing: 'linear' },        // hover ~1.3s, then depart at even speed
-    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.64, easing: 'linear' },      // mid-flight (no stop)
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.875 },                          // arrive
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                              // fade out on arrival
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: k(120) },                                  // appear quickly
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: k(HOVER), easing: 'linear' },              // hold 1s still, then depart
+    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: k(HOVER + FLY / 2), easing: 'linear' },  // constant-speed flight
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: k(HOVER + FLY) },                           // arrive
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                                        // fade out
   ], { duration: DUR, fill: 'forwards' });
-  flashAgent(from, fromIdx, 'sending', 1300);                                  // 📤 sender, during the 1.3s departure hover
-  setTimeout(() => flashAgent(to, toIdx, 'receiving', 700), Math.round(DUR * 0.875)); // 📥 receiver, on arrival
+  flashAgent(from, fromIdx, 'sending', HOVER);                                  // 📤 sender glows during the 1s hold
+  setTimeout(() => flashAgent(to, toIdx, 'receiving', 700), HOVER + FLY);       // 📥 receiver, on arrival
   anim.onfinish = () => el.remove();
 }
 function diffHandoffs(prev, cur) {
@@ -447,6 +454,7 @@ function diffHandoffs(prev, cur) {
     byRole[role].push(id);
   }
   const idxOf = (role, id) => (byRole[role] || []).indexOf(id);
+  const hasChief = Object.values(cur).some((x) => x.role === 'chief-of-staff');
   let n = 0;
   const fire = (from, fromIdx, to, toIdx, title) => {
     if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx, title); }
@@ -455,11 +463,16 @@ function diffHandoffs(prev, cur) {
     const c = cur[id];
     const p = prev[id];
     const task = (c.task || '').slice(0, 28); // the REAL task this agent is handling
-    if (!p && c.status === 'working' && ENTRY.has(c.role)) {
-      // your command leaves YOU (the CEO) and is distributed to the starting agent
-      fire('ceo', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '지시');
+    if (!p && c.status === 'working') {
+      // new work appears → it flows from YOU, through the manager, out to the team:
+      if (c.role === 'chief-of-staff') {
+        fire('ceo', 0, 'chief-of-staff', Math.max(0, idxOf(c.role, id)), task || '명령'); // your command → manager
+      } else if (hasChief) {
+        fire('chief-of-staff', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '작업 배정'); // manager distributes
+      } else if (ENTRY.has(c.role)) {
+        fire('ceo', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '지시'); // no manager → straight from you
+      }
     } else if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) {
-      // this specific agent ships its finished result to a specific agent downstream
       fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]), task || 'result');
     }
   }

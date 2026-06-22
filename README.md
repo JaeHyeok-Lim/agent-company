@@ -110,7 +110,8 @@ hook to load). Run `npm run dashboard` here to watch; re-run `promote` after edi
 From a Claude Code session in this directory:
 
 - *"Use the **architect** agent to plan X"* — delegates to one role.
-- *"Run the **build-feature** workflow for X"* — runs research → design → implement → review.
+- **`/go <goal>`** — the one command: the chief-of-staff staffs the team, then it runs
+  research → design → implement → review → document.
 - Validated roles can be promoted to `~/.claude/agents/` for use in any project.
 
 ## Design philosophy

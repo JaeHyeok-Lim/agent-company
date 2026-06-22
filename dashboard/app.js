@@ -423,20 +423,19 @@ function sendPlane(from, fromIdx, to, toIdx, title) {
   courierLayer.appendChild(el);
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2 - 5; // gentle arc
-  // Timeline: appear + hover ~1s over the SENDER → fly at an EVEN (linear) speed →
-  // hover ~1s over the RECEIVER → fade out. Lets the label be read at both ends.
-  const DUR = 3600;
+  // Timeline: appear + hover ~1.3s over the SENDER → fly at an EVEN (linear) speed →
+  // arrive and fade out immediately (no mid/arrival pause).
+  const DUR = 3200;
   const anim = el.animate([
     { left: `${a.x}%`, top: `${a.y}%`, opacity: 0, offset: 0 },
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.04 },                         // fade in over sender
-    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.28, easing: 'linear' },        // hover ~1s, then depart at even speed
-    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.49, easing: 'linear' },      // mid-flight (arc apex)
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.69 },                           // arrive
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.95 },                           // hover ~1s over receiver
-    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                              // fade out
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.03 },                         // fade in over sender
+    { left: `${a.x}%`, top: `${a.y}%`, opacity: 1, offset: 0.41, easing: 'linear' },        // hover ~1.3s, then depart at even speed
+    { left: `${midX}%`, top: `${midY}%`, opacity: 1, offset: 0.64, easing: 'linear' },      // mid-flight (no stop)
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 1, offset: 0.875 },                          // arrive
+    { left: `${b.x}%`, top: `${b.y}%`, opacity: 0, offset: 1 },                              // fade out on arrival
   ], { duration: DUR, fill: 'forwards' });
-  flashAgent(from, fromIdx, 'sending', 1000);                                  // 📤 sender, during the departure hover
-  setTimeout(() => flashAgent(to, toIdx, 'receiving', 1000), Math.round(DUR * 0.69)); // 📥 receiver, on arrival
+  flashAgent(from, fromIdx, 'sending', 1300);                                  // 📤 sender, during the 1.3s departure hover
+  setTimeout(() => flashAgent(to, toIdx, 'receiving', 700), Math.round(DUR * 0.875)); // 📥 receiver, on arrival
   anim.onfinish = () => el.remove();
 }
 function diffHandoffs(prev, cur) {

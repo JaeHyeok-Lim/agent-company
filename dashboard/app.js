@@ -13,7 +13,65 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · 1s hold · uniform flight'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · i18n KO/EN · abstract labels'; // bump to confirm a hard refresh loaded new code
+
+// ---- i18n (KO / EN) ----
+const langToggle = document.getElementById('langToggle');
+let LANG = 'ko';
+try { LANG = localStorage.getItem('agentLang') || 'ko'; } catch { /* ignore */ }
+const T = {
+  ko: {
+    sub: '멀티 에이전트 팀 — 실시간 플로어 뷰', toOffice: '🎬 오피스 뷰', toCards: '🃏 카드 뷰', langBtn: 'EN',
+    idle: '대기', working: '작업 중', done: '완료', legIdle: '대기/휴식', legWorking: '작업 중', legDone: '완료',
+    inTray: '🗂️ 해야 할 작업', warehouse: '📦 완료 창고', none: '없음', more: (n) => `+${n}건`,
+    notStaffed: '미배정', planned: (n) => `예정 ×${n}`, agentsN: (n) => `${n}명`,
+    modalSub: '— 한 작업 (이번 세션)', modalEmpty: '아직 한 작업이 없습니다.', teamEmpty: '이번 세션에 아직 팀 작업이 없습니다.',
+    noActive: '대기 중 — 진행 중인 작업 없음', updated: (tm, w, n) => `${tm} 갱신 · 작업중 ${w} / 총 ${n}`,
+    ceoTitle: '대표(You) — 클릭하면 팀 작업 보기',
+  },
+  en: {
+    sub: 'the multi-agent team — live floor view', toOffice: '🎬 Office view', toCards: '🃏 Card view', langBtn: '한국어',
+    idle: 'idle', working: 'working', done: 'done', legIdle: 'idle / dozing', legWorking: 'working', legDone: 'done',
+    inTray: '🗂️ To do', warehouse: '📦 Done', none: 'none', more: (n) => `+${n} more`,
+    notStaffed: 'not staffed', planned: (n) => `planned ×${n}`, agentsN: (n) => `${n} agents`,
+    modalSub: '— work this session', modalEmpty: 'No work yet.', teamEmpty: 'No team work this session yet.',
+    noActive: 'idle — no active work', updated: (tm, w, n) => `updated ${tm} · ${w} working / ${n} total`,
+    ceoTitle: 'You (CEO) — click for the team’s work',
+  },
+};
+const t = (k, ...a) => { const v = T[LANG]?.[k]; return typeof v === 'function' ? v(...a) : (v ?? k); };
+const ROLE_NAME = {
+  ko: { ceo: '대표(You)', orchestrator: '총괄', 'chief-of-staff': '관리팀', researcher: '조사팀', architect: '설계팀', implementer: '개발팀', reviewer: '검토팀', scribe: '문서팀', auditor: '감사팀' },
+  en: { ceo: 'You (CEO)', orchestrator: 'Orchestrator', 'chief-of-staff': 'Management', researcher: 'Research', architect: 'Design', implementer: 'Engineering', reviewer: 'Review', scribe: 'Docs', auditor: 'Audit' },
+};
+const ROLE_ACTION = {
+  ko: { ceo: '지시', orchestrator: '총괄', 'chief-of-staff': '업무 배정', researcher: '자료 조사', architect: '설계', implementer: '개발', reviewer: '검토', scribe: '문서화', auditor: '점검' },
+  en: { ceo: 'directing', orchestrator: 'coordinating', 'chief-of-staff': 'assigning', researcher: 'researching', architect: 'designing', implementer: 'building', reviewer: 'reviewing', scribe: 'writing docs', auditor: 'auditing' },
+};
+const OUTPUT = { // the abstract thing a sender hands off (shown on the plane)
+  ko: { ceo: '지시', orchestrator: '지시', 'chief-of-staff': '업무 배정', researcher: '조사 결과', architect: '설계안', implementer: '구현물', reviewer: '검토 의견', scribe: '문서', auditor: '개선 제안' },
+  en: { ceo: 'brief', orchestrator: 'brief', 'chief-of-staff': 'assignment', researcher: 'findings', architect: 'design', implementer: 'build', reviewer: 'review', scribe: 'docs', auditor: 'proposal' },
+};
+function roleName(role) { return ROLE_NAME[LANG]?.[role] || roster[role]?.name || role; }
+function roleAction(role) { return ROLE_ACTION[LANG]?.[role] || ''; }
+function applyStrings() {
+  const set = (id, s) => { const e = document.getElementById(id); if (e) e.textContent = s; };
+  set('sub', t('sub')); set('lg-idle', t('legIdle')); set('lg-working', t('legWorking')); set('lg-done', t('legDone'));
+  if (langToggle) langToggle.textContent = t('langBtn');
+  if (toggle) toggle.textContent = document.body.dataset.view === 'office' ? t('toCards') : t('toOffice');
+}
+function setLang(lang) {
+  LANG = lang;
+  try { localStorage.setItem('agentLang', lang); } catch { /* ignore */ }
+  applyStrings();
+  floorBuilt = false; // rebuild the office so plaques / rail / labels pick up the language
+  if (office) office.innerHTML = '';
+  for (const key of Object.keys(roomEls)) delete roomEls[key];
+  courierLayer = null; floorPlanEl = null; slipsEl = null; shelvesEl = null;
+  lastSig = ''; prevInst = null;
+  tick();
+}
+if (langToggle) langToggle.addEventListener('click', () => setLang(LANG === 'ko' ? 'en' : 'ko'));
 
 // floor-plan zones (% of plan): two columns flanking a central corridor at x≈45–55
 const ROOMS = {
@@ -31,22 +89,8 @@ const NEXT = { researcher: 'architect', architect: 'implementer', implementer: '
 const ENTRY = new Set(['researcher', 'chief-of-staff']);
 // per-department floor textures (kept; the clutter prop icons were removed)
 const FLOORS = ['wood', 'tile', 'carpet'];
-// what each handoff is "about" — shown as a title on the flying paper airplane
-const MESSAGES = {
-  'orchestrator>researcher': 'task brief',
-  'orchestrator>chief-of-staff': 'priorities',
-  'researcher>architect': 'findings',
-  'architect>implementer': 'design spec',
-  'implementer>reviewer': 'PR diff',
-  'reviewer>scribe': 'sign-off',
-  'reviewer>implementer': 'change request',
-  'scribe>orchestrator': 'docs',
-  'chief-of-staff>orchestrator': 'status report',
-  'architect>researcher': 'questions',
-  'auditor>orchestrator': '개선 결재',
-  'orchestrator>auditor': 'audit ask',
-};
-function messageTitle(from, to) { return MESSAGES[`${from}>${to}`] || 'memo'; }
+// the abstract, localized thing a sender hands off — shown on the plane (sender-based)
+function messageTitle(from) { return OUTPUT[LANG]?.[from] || (LANG === 'ko' ? '전달' : 'memo'); }
 
 let roster = {};
 let lastSig = '';
@@ -78,26 +122,25 @@ function statusDot(s) {
   return '⚪';
 }
 function taskListHtml(insts) {
-  if (!insts.length) return '<p class="modal-empty">아직 한 작업이 없습니다.</p>';
+  if (!insts.length) return `<p class="modal-empty">${t('modalEmpty')}</p>`;
   const rank = { working: 0, done: 1, idle: 2 };
   const sorted = insts.slice().sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
-  const rows = sorted.map((x) => `<li><span class="mt-dot">${statusDot(x.status)}</span><span class="mt-task">${escapeHtml(x.task || '(작업 미상)')}</span><span class="mt-st">${escapeHtml(x.status)}</span></li>`).join('');
+  const rows = sorted.map((x) => `<li><span class="mt-dot">${statusDot(x.status)}</span><span class="mt-task">${escapeHtml(roleAction(x.role))}</span><span class="mt-st">${escapeHtml(t(x.status))}</span></li>`).join('');
   return `<ul class="modal-tasks">${rows}</ul>`;
 }
 function openModal(role) {
   ensureModal();
   const all = Object.values(lastState.instances || {});
-  const info = roster[role] || { name: role, emoji: '' };
   let body;
   if (role === 'ceo') {
     const roles = [...new Set(all.map((x) => x.role))];
     body = roles.length
-      ? roles.map((r) => `<h4>${(roster[r]?.emoji) || ''} ${escapeHtml(roster[r]?.name || r)}</h4>${taskListHtml(all.filter((x) => x.role === r))}`).join('')
-      : '<p class="modal-empty">이번 세션에 아직 팀 작업이 없습니다.</p>';
+      ? roles.map((r) => `<h4>${(roster[r]?.emoji) || ''} ${escapeHtml(roleName(r))}</h4>${taskListHtml(all.filter((x) => x.role === r))}`).join('')
+      : `<p class="modal-empty">${t('teamEmpty')}</p>`;
   } else {
     body = taskListHtml(all.filter((x) => x.role === role));
   }
-  modalTitle.innerHTML = `${info.emoji || ''} ${escapeHtml(info.name || role)} <span class="modal-sub">— 한 작업 (이번 세션)</span>`;
+  modalTitle.innerHTML = `${(roster[role]?.emoji) || ''} ${escapeHtml(roleName(role))} <span class="modal-sub">${t('modalSub')}</span>`;
   modalBody.innerHTML = body;
   modalEl.hidden = false;
 }
@@ -127,7 +170,7 @@ function ensureModal() {
 function setView(v) {
   document.body.dataset.view = v;
   try { localStorage.setItem('agentView', v); } catch { /* ignore */ }
-  toggle.textContent = v === 'office' ? '🃏 Card view' : '🎬 Office view';
+  toggle.textContent = v === 'office' ? t('toCards') : t('toOffice');
 }
 let initial = 'cards';
 try { initial = localStorage.getItem('agentView') || 'cards'; } catch { /* ignore */ }
@@ -151,8 +194,8 @@ function workerClass(status, calm) {
   return calm ? 'doze calm' : 'doze';
 }
 function taskCaption(w) {
-  // only show the task caption while actually working — it disappears when done/idle
-  return w.status === 'working' ? escapeHtml((w.task || '').slice(0, 26)) : '';
+  // abstract, localized action while working — disappears when done/idle
+  return w.status === 'working' ? escapeHtml(roleAction(w.role)) : '';
 }
 function podHead(instances, crewLen, planned) {
   if (instances.length) return `${crewLen}${instances.length > CREW_CAP ? '+' : ''}`;
@@ -172,12 +215,12 @@ function badge(instances, planned) {
   const done = instances.filter((x) => x.status === 'done').length;
   if (instances.length) {
     const parts = [];
-    if (working) parts.push(`${working} working`);
-    if (done) parts.push(`${done} done`);
-    return parts.join(' · ') || `${instances.length} agents`;
+    if (working) parts.push(`${working} ${t('working')}`);
+    if (done) parts.push(`${done} ${t('done')}`);
+    return parts.join(' · ') || t('agentsN', instances.length);
   }
-  if (planned === 0) return 'not staffed';
-  if (planned > 0) return `planned ×${planned}`;
+  if (planned === 0) return t('notStaffed');
+  if (planned > 0) return t('planned', planned);
   return '';
 }
 function dots(instances, planned) {
@@ -196,16 +239,15 @@ function card(role, info, instances, planned) {
   const cls = `${info.boss ? 'boss' : ''} ${info.manager ? 'manager' : ''} ${planned === 0 ? 'unstaffed' : ''}`;
   const b = badge(instances, planned);
   const d = dots(instances, planned);
-  const latest = instances.find((x) => x.status === 'working') || instances[instances.length - 1];
   return `
   <div class="card ${cls} status-${status}" data-role="${role}" style="--accent:${info.color}">
     <div class="avatar">${info.emoji}</div>
     <div class="body">
-      <div class="name">${escapeHtml(info.name)} <span class="model">${escapeHtml(info.model)}</span>${b ? `<span class="count">${escapeHtml(b)}</span>` : ''}</div>
+      <div class="name">${escapeHtml(roleName(role))} <span class="model">${escapeHtml(info.model)}</span>${b ? `<span class="count">${escapeHtml(b)}</span>` : ''}</div>
       <div class="trait">${escapeHtml(info.trait)}</div>
       <div class="status">
-        <span class="dot ${status}"></span><span class="label">${status}</span>
-        ${latest?.task ? `<span class="task">— ${escapeHtml(latest.task)}</span>` : ''}
+        <span class="dot ${status}"></span><span class="label">${t(status)}</span>
+        ${status === 'working' ? `<span class="task">— ${escapeHtml(roleAction(role))}</span>` : ''}
       </div>
       ${d ? `<div class="dots">${d}</div>` : ''}
     </div>
@@ -278,7 +320,7 @@ function buildFloorPlan() {
       const floorClass = `floor-${FLOORS[roleSeed(role) % FLOORS.length]}`;
       return `<div class="room ${floorClass}" id="room-${role}" data-role="${role}" style="left:${R.x}%;top:${R.y}%;width:${R.w}%;height:${R.h}%;--accent:${info.color}">
         ${roomDecor}
-        <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(info.name)} <span class="headcount"></span></div>
+        <div class="plaque"><span class="pemoji">${info.emoji}</span> ${escapeHtml(roleName(role))} <span class="headcount"></span></div>
         <div class="floor"></div>
       </div>`;
     }).join('');
@@ -295,18 +337,18 @@ function buildFloorPlan() {
 
   const rail = `<aside class="task-rail">
     <section class="rail-sec in-tray">
-      <h3 class="rail-title">🗂️ 해야 할 작업</h3>
+      <h3 class="rail-title">${t('inTray')}</h3>
       <div class="slips"></div>
     </section>
     <section class="rail-sec warehouse">
-      <h3 class="rail-title">📦 완료 창고</h3>
+      <h3 class="rail-title">${t('warehouse')}</h3>
       <div class="shelves"></div>
     </section>
   </aside>`;
   office.innerHTML = `<div class="office-wrap"><div class="floor-plan">${corridor}${rooms}<div class="couriers"></div></div>${rail}</div>`;
   floorPlanEl = office.querySelector('.floor-plan');
   // CEO (you) — an overseeing figure at the top of the floor; click it for the team's work
-  floorPlanEl.insertAdjacentHTML('beforeend', '<div class="ceo" data-role="ceo" title="You (CEO) — 클릭하면 팀 작업 보기"><span class="ceo-fig">👑</span><span class="ceo-tag">You</span></div>');
+  floorPlanEl.insertAdjacentHTML('beforeend', `<div class="ceo" data-role="ceo" title="${t('ceoTitle')}"><span class="ceo-fig">👑</span><span class="ceo-tag">You</span></div>`);
   courierLayer = office.querySelector('.couriers');
   slipsEl = office.querySelector('.slips');
   shelvesEl = office.querySelector('.shelves');
@@ -334,23 +376,21 @@ function infoFor(role) {
   return roster[role] || { name: role, emoji: '👤', color: '#9aa3b2' };
 }
 function moreLine(extra) {
-  return extra > 0 ? `<div class="rail-more">+${extra} more</div>` : '';
+  return extra > 0 ? `<div class="rail-more">${t('more', extra)}</div>` : '';
 }
 function slipHtml(inst) {
   const info = infoFor(inst.role);
-  const task = escapeHtml(inst.task || 'working…');
   return `<div class="slip" style="--accent:${info.color}">
     <div class="slip-fold"></div>
-    <div class="slip-who"><span class="slip-emoji">${info.emoji}</span> ${escapeHtml(info.name)}</div>
-    <div class="slip-task">${task}</div>
+    <div class="slip-who"><span class="slip-emoji">${info.emoji}</span> ${escapeHtml(roleName(inst.role))}</div>
+    <div class="slip-task">${escapeHtml(roleAction(inst.role))}</div>
   </div>`;
 }
 function boxHtml(inst) {
   const info = infoFor(inst.role);
-  const task = escapeHtml(inst.task || 'done');
-  return `<div class="box" style="--accent:${info.color}" title="${task}">
+  return `<div class="box" style="--accent:${info.color}" title="${escapeHtml(roleName(inst.role))}">
     <span class="box-emoji">${info.emoji}</span>
-    <span class="box-label">${task}</span>
+    <span class="box-label">${escapeHtml(roleAction(inst.role))}</span>
   </div>`;
 }
 function updateTaskBoard(all) {
@@ -360,13 +400,13 @@ function updateTaskBoard(all) {
     const shown = working.slice(0, CAP).map((x) => slipHtml(x)).join('');
     slipsEl.innerHTML = shown + moreLine(working.length - CAP);
   } else {
-    slipsEl.innerHTML = '<div class="rail-empty">없음</div>';
+    slipsEl.innerHTML = `<div class="rail-empty">${t('none')}</div>`;
   }
   if (done.length) {
     const shown = done.slice(0, CAP).map((x) => boxHtml(x)).join('');
     shelvesEl.innerHTML = shown + moreLine(done.length - CAP);
   } else {
-    shelvesEl.innerHTML = '<div class="rail-empty">없음</div>';
+    shelvesEl.innerHTML = `<div class="rail-empty">${t('none')}</div>`;
   }
 }
 
@@ -419,7 +459,7 @@ function sendPlane(from, fromIdx, to, toIdx, title) {
   el.className = 'plane';
   el.style.setProperty('--ang', `${ang}deg`);
   el.style.setProperty('--from', roster[from]?.color || '#9aa3b2'); // tint the plane by sender
-  el.innerHTML = `<div class="plane-label">${escapeHtml(title || messageTitle(from, to))}</div>${planeSVG()}`;
+  el.innerHTML = `<div class="plane-label">${escapeHtml(title || messageTitle(from))}</div>${planeSVG()}`;
   el.style.left = `${a.x}%`;
   el.style.top = `${a.y}%`;
   courierLayer.appendChild(el);
@@ -455,24 +495,20 @@ function diffHandoffs(prev, cur) {
   const idxOf = (role, id) => (byRole[role] || []).indexOf(id);
   const hasChief = Object.values(cur).some((x) => x.role === 'chief-of-staff');
   let n = 0;
-  const fire = (from, fromIdx, to, toIdx, title) => {
-    if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx, title); }
+  // plane labels come from the localized, abstract handoff type (messageTitle(from))
+  const fire = (from, fromIdx, to, toIdx) => {
+    if (from && to && n < 12) { n++; sendPlane(from, fromIdx, to, toIdx); }
   };
   for (const id of Object.keys(cur)) {
     const c = cur[id];
     const p = prev[id];
-    const task = (c.task || '').slice(0, 28); // the REAL task this agent is handling
     if (!p && c.status === 'working') {
       // new work appears → it flows from YOU, through the manager, out to the team:
-      if (c.role === 'chief-of-staff') {
-        fire('ceo', 0, 'chief-of-staff', Math.max(0, idxOf(c.role, id)), task || '명령'); // your command → manager
-      } else if (hasChief) {
-        fire('chief-of-staff', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '작업 배정'); // manager distributes
-      } else if (ENTRY.has(c.role)) {
-        fire('ceo', 0, c.role, Math.max(0, idxOf(c.role, id)), task || '지시'); // no manager → straight from you
-      }
+      if (c.role === 'chief-of-staff') fire('ceo', 0, 'chief-of-staff', Math.max(0, idxOf(c.role, id)));
+      else if (hasChief) fire('chief-of-staff', 0, c.role, Math.max(0, idxOf(c.role, id)));
+      else if (ENTRY.has(c.role)) fire('ceo', 0, c.role, Math.max(0, idxOf(c.role, id)));
     } else if (p && p.status !== 'done' && c.status === 'done' && NEXT[c.role]) {
-      fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]), task || 'result');
+      fire(c.role, Math.max(0, idxOf(c.role, id)), NEXT[c.role], randIdx(NEXT[c.role]));
     }
   }
 }
@@ -503,8 +539,8 @@ function render(state, alloc) {
 
   const working = all.filter((x) => x.status === 'working').length;
   updated.textContent = state.updated
-    ? `updated ${new Date(state.updated).toLocaleTimeString()} · ${working} working / ${all.length} total`
-    : 'idle — no active work';
+    ? t('updated', new Date(state.updated).toLocaleTimeString(), working, all.length)
+    : t('noActive');
 }
 
 // ---- live tick: the office reflects REAL work only (no fake/demo motion) ----
@@ -530,6 +566,7 @@ async function tick() {
 try {
   roster = await getJSON('/dashboard/roster.json');
   ensureModal(); // wire click-to-see-tasks (cards, rooms, CEO)
+  applyStrings(); // set localized static text (sub, legend, buttons)
   await tick();
   setInterval(tick, POLL_MS);
 } catch (e) {

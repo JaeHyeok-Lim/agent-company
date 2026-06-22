@@ -12,9 +12,10 @@
 <body data-view="cards">
   <header>
     <h1><span class="logo">🏢</span> agent-company</h1>
-    <p class="sub">the multi-agent team — live floor view</p>
+    <p id="sub" class="sub">the multi-agent team — live floor view</p>
     <div class="controls">
       <button id="viewToggle" class="toggle" type="button">🎬 Office view</button>
+      <button id="langToggle" class="toggle" type="button">EN</button>
       <span id="updated" class="updated">loading…</span>
     </div>
   </header>
@@ -23,9 +24,9 @@
     <section id="office" class="office"></section>
   </main>
   <footer>
-    <span class="legend"><span class="dot idle"></span> idle / dozing</span>
-    <span class="legend"><span class="dot working"></span> working</span>
-    <span class="legend"><span class="dot done"></span> done</span>
+    <span class="legend"><span class="dot idle"></span> <span id="lg-idle"></span></span>
+    <span class="legend"><span class="dot working"></span> <span id="lg-working"></span></span>
+    <span class="legend"><span class="dot done"></span> <span id="lg-done"></span></span>
     <span class="hint">status driven by Claude Code hooks → <code>.claude/state/agents.json</code></span>
     <span id="build" class="build"></span>
   </footer>

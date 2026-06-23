@@ -64,6 +64,24 @@ When code is added later (TS SDK escalation path), record `build` / `test` / `li
 - **Verify, don't assume.** Roles report what they actually ran/found; reviewer uses
   adversarial verify (try to refute a finding before accepting it).
 
+## Working principles (orchestrator defaults)
+
+Adapted from the Claude Code founders' working agreement, mapped onto our native primitives —
+not duplicated, just the parts our harness didn't already encode:
+
+- **Plan non-trivial work first.** For anything with 3+ steps or an architecture decision,
+  delegate to the **architect** before implementing (this is our "plan mode"). If reality
+  diverges from the plan mid-flight, STOP and re-plan from the new facts — don't patch a stale
+  plan.
+- **One subagent, one task.** Keep the main session's context clean by offloading
+  research/exploration/parallel analysis to subagents (the chief-of-staff already slices work
+  one task per instance). Spend more compute via more agents when a task is hard.
+- **Verify before done.** No deliverable is "done" without proof it runs; route correctness-
+  sensitive work through the **reviewer**. See the delivery-standards skill's definition of done.
+- **Self-improvement via the brain.** After a correction or a non-obvious lesson, `/capture` it
+  as a neuron; at the start of substantive work, `/recall` the relevant ones. This is our
+  lessons loop — there is no separate `lessons.md`.
+
 ## Guardrails (don't)
 
 - Don't give a role broader `tools` than its job needs (e.g. researcher is read-only —

@@ -8,8 +8,17 @@ description: The agent company's shared definition-of-done and collaboration sta
 Shared "house rules" every role on the team follows. Keep deliverables consistent regardless
 of which agent produced them.
 
+## Core principles (every role)
+- **Simplicity first** — make every change as simple as it can be; touch the least code that
+  solves it.
+- **Minimal impact** — change only what the task needs; don't refactor adjacent code or risk
+  introducing bugs in code you weren't asked to touch.
+- **No laziness** — trace problems to the root cause; no band-aids or temporary patches. Hold
+  to the bar a senior engineer would.
+
 ## Definition of done
 - The change does what was asked — verified by actually running it, not by assertion.
+- Before marking work done, ask: **"would a staff engineer approve this?"** If not, it isn't done.
 - Failures and skipped steps are reported plainly, with the real output.
 - No scope creep: only what was requested; no speculative abstractions or dead error handling.
 - Code matches the surrounding style (naming, comments, idioms).

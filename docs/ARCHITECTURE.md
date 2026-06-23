@@ -96,6 +96,30 @@ default; use a barrier only when a stage genuinely needs *all* prior results at 
 Loop patterns to reuse (from `[[loop-engineering]]`): loop-until-dry (keep finding until
 nothing new), adversarial verify (refute before accept), self-repair (retry on error).
 
+### Conflict-safety for parallel writers
+
+When `parallel()` fans out several write-capable agents at once (multiple implementers, or
+implementer + devops + scribe together), two of them editing the same file would corrupt or
+overwrite each other's work. We prevent this by **disjoint owned-paths per slice** — enforcement
+by contract, not by runtime isolation:
+
+1. The chief-of-staff emits, alongside each write role's `tasks[]`, an `ownedPaths[]` array with
+   one entry per instance: the file/dir globs that instance is the **sole writer** of. These must
+   be **pairwise disjoint** across every concurrent instance — same role and across roles — so no
+   two parallel writers ever share a writable path.
+2. `go.js` / `staffed-build.js` inject that boundary into each write-role prompt (`WRITE_ROLES`):
+   *"you are the sole writer of these paths; write only inside them; anything outside is an
+   integration point — don't write it, report it."* Read-only roles (researcher, architect,
+   reviewer, security) get no boundary because they cannot collide.
+3. **Integration points** — files no single slice can own (shared entry points, lockfiles,
+   `README`) — belong to no slice. They're deferred to a single sequential owner (the
+   orchestrator after the fan-out), never written concurrently.
+
+Why owned-paths and not `isolation:'worktree'`: worktrees require a git repo and force a merge
+step, which collides with our rule that no agent commits/pushes — the orchestrator reviews the
+working tree directly. Owned-paths needs no runtime feature and is provably safe: two writes can
+only collide if their path sets intersect, and the sets are declared disjoint by construction.
+
 ## Model tiering
 
 Mirrors effort tiers — spend intelligence where it pays:

@@ -4,6 +4,10 @@
 # Live dashboard state (written by hooks at runtime)
 .claude/state/
 
+# Per-run staffing record — the chief-of-staff rewrites this on every /go run, so it's
+# transient working state (twin of .claude/state/allocation.json), not a versioned doc.
+docs/staffing.md
+
 # Node (for the future TS SDK escalation path)
 node_modules/
 dist/

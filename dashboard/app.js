@@ -13,7 +13,7 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · bold KO dept names + docs sync'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · /go workflow bridge (synthetic instances)'; // bump to confirm a hard refresh loaded new code
 
 // ---- i18n (KO / EN) ----
 const langToggle = document.getElementById('langToggle');
@@ -576,12 +576,57 @@ function render(state, alloc) {
     : t('noActive');
 }
 
-// ---- live tick: the office reflects REAL work only (no fake/demo motion) ----
+// ---- workflow bridge -------------------------------------------------------
+// `/go` (Workflow) subagents do NOT fire the Task|Agent tracking hooks, so agents.json
+// stays empty during a workflow run while allocation.json fills in. To make the dashboard
+// reflect a `/go` run we SYNTHESIZE display-only instances from allocation.json + a
+// run-state signal (run.json, written by dashboard/run-marker.mjs around the launch).
+// These are layered on top of the real (hook) instances — the real agents.json read path
+// and its session-scoping are untouched. Timing is RUN-GRANULAR (approximate): we know the
+// run started/ended, not per-phase progress, because there are no per-agent hook events.
+const RUN_STALE_MS = 30 * 60 * 1000; // stale guard: if the orchestrator never writes `done`, stop synthesizing after 30 min
+
+function bridgeSynthetic(state, alloc, run) {
+  // active only while running and within the stale window; `done` flips status but the run is over
+  const runActive = run?.status === 'running'
+    && (Date.now() - Date.parse(run.startedAt) < RUN_STALE_MS);
+  const runDone = run?.status === 'done';
+  if (!runActive && !runDone) return; // no active/recent run → nothing to bridge
+
+  // a real (hook) instance is CURRENTLY WORKING for a role → prefer it, skip synthesis (no double count).
+  // Only working masks: stale `done` instances from earlier in the session must not block a new run's synthesis.
+  const realRoles = new Set(
+    Object.values(state.instances || {}).filter((x) => x.status === 'working').map((x) => x.role),
+  );
+  const status = runActive ? 'working' : 'done';
+  for (const a of alloc.allocation || []) {
+    const count = Math.trunc(a.count || 0);
+    if (count <= 0 || realRoles.has(a.role)) continue;
+    const tasks = Array.isArray(a.tasks) ? a.tasks : [];
+    for (let i = 0; i < count; i++) {
+      // STABLE id so diffHandoffs() (which keys instances by these object keys) sees the same
+      // instance across every 1.5s poll and does NOT treat it as "newly appeared" — otherwise
+      // it would re-fire handoff planes every tick. One plane burst at first appearance is fine.
+      const id = `synthetic-${a.role}-${i}`;
+      state.instances[id] = {
+        role: a.role,
+        status,
+        task: tasks[i] || tasks[0] || run.goal || '',
+        since: run.startedAt,
+        synthetic: true,
+      };
+    }
+  }
+}
+
+// ---- live tick: the office reflects REAL work, plus a synthesized view of `/go` runs ----
 async function tick() {
   let state = { instances: {}, updated: null };
   let alloc = { allocation: [] };
+  let run = null;
   try { state = await getJSON('/shared/agents.json'); } catch { /* none yet */ }
   try { alloc = await getJSON('/shared/allocation.json'); } catch { /* none yet */ }
+  try { run = await getJSON('/shared/run.json'); } catch { /* no active run */ }
   // scope to the current (latest) chat session so the floor + task board reflect
   // only this session's assigned work — not the global all-time history
   const sid = state.session;
@@ -592,6 +637,8 @@ async function tick() {
     }
     state = { instances: scoped, updated: state.updated, session: sid };
   }
+  // workflow bridge: layer synthetic instances on top of the (scoped) real ones
+  bridgeSynthetic(state, alloc, run);
   render(state, alloc);
 }
 

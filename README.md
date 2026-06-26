@@ -1,13 +1,13 @@
 # agent-company
 
+### 📖 [한글 사용 설명서 →](docs/사용설명서.md)  ·  도식 포함, 가장 먼저 읽으면 좋습니다
+
 A reusable **multi-agent "company"** running on Claude Code primitives — a team of
 role-specialized agents that collaborate on software work, designed to be reused across all
 future projects.
 
 > Think of it as an org: the main Claude Code session is the orchestrator (PM), and each
 > file in `.claude/agents/` is an employee with a defined role, toolset, and model tier.
-
-📖 **사용설명서(한글, 도식 포함): [docs/사용설명서.md](docs/사용설명서.md)** — 가장 먼저 읽으면 좋습니다.
 
 ## Layout
 

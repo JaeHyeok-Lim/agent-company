@@ -14,17 +14,17 @@
 product-mgr researcher  designer   architect  implementer  devops
  (what/why)  (explore)   (UX)      (design)    (build)     (ship)
    └───────────┴──────────┴───────────┴────────────┴──────────┘
-   ┌──────────┬───────────┬──────────┐        ┌──────────────────────┐
-   ▼          ▼           ▼          ▼         │ auditor (감사팀):      │
-reviewer   security  data-analyst  scribe     │ reviews the SYSTEM,    │
-(verify)   (AppSec)   (metrics)    (docs)      │ files improvement memos│
-                                               └──────────────────────┘
+   ┌──────────┬───────────┬──────────┬──────────┐        ┌──────────────────────┐
+   ▼          ▼           ▼          ▼          ▼         │ auditor (감사팀):      │
+reviewer   security     legal    data-analyst  scribe    │ reviews the SYSTEM,    │
+(verify)   (AppSec)  (⚖️ legal)   (metrics)    (docs)     │ files improvement memos│
+                                                          └──────────────────────┘
 ```
 
 The pipeline runs front-to-back (product-manager → researcher → designer → architect →
-implementer → devops → reviewer → security → data-analyst → scribe); the **auditor** is an
-out-of-band oversight role that critiques the company itself rather than sitting in the pipeline.
-Model tiers per role are in the table below.
+implementer → devops → reviewer → security → legal → data-analyst → scribe); the **auditor** is
+an out-of-band oversight role that critiques the company itself rather than sitting in the
+pipeline. Model tiers per role are in the table below.
 
 The **chief-of-staff** is a staff (advisory) role: it organizes and reports but does not
 execute. The orchestrator (or you directly) consults it for status, prioritization, and
@@ -58,13 +58,14 @@ the user) — the orchestrator relays what matters.
 | **devops** | "ship & operate" — CI/CD, deploy, infra, reliability/observability | Read, Edit, Write, Grep, Glob, Bash | opus |
 | **data-analyst** | "metrics, analysis, experiments" — evidence for decisions | Read, Grep, Glob, Bash, Write | sonnet |
 | **security** | "AppSec" — threat-model + vulnerability review with severity | Read, Grep, Glob, Bash | opus |
+| **legal** | "legal / licensing / IP / privacy / regulatory review" — is this dependency's license compatible, are we compliant, PII/data-protection check; **not a lawyer** — does compliance research + technical checks and escalates ambiguous/high-stakes/patent matters to the user for real legal counsel | Read, Grep, Glob, WebSearch, WebFetch, Write, Bash | opus |
 
 ## Processes (workflows)
 
 `.claude/workflows/*.js` encode deterministic collaboration. The canonical ones:
 - `go.js` ⭐ — **the one command** (`/go <goal>`): the chief-of-staff allocates headcount per
   role, then it runs **define → research → UX → architecture → implement → ship → review →
-  security → data → document**, skipping any role staffed at 0. Supersedes running
+  security → legal → data → document**, skipping any role staffed at 0. Supersedes running
   `build-feature` / `staffed-build` by hand for most goals.
 - `build-feature.js` — pipelines **research → design → implement → review**, with the review
   stage adversarially verifying before accepting.
@@ -81,10 +82,12 @@ the user) — the orchestrator relays what matters.
 
 Each function is **not** fixed at one agent. The chief-of-staff allocates headcount per role for
 a given goal:
-- **0** — role not needed (e.g. no docs to write → scribe 0).
-- **1** — needed, straightforward, single coherent piece.
+- **0** — role not needed (e.g. no docs to write → scribe 0; no external/legal exposure → legal 0).
+- **1** — needed, straightforward, single coherent piece (e.g. legal: third-party deps/licenses,
+  user data/PII, IP, or a regulated domain in scope).
 - **2–4** — large/parallelizable, bug-prone, or correctness-critical work, split into one task
   slice per instance (e.g. 3 reviewers independently refuting a risky change; consensus wins).
+  Rare for legal — most legal reviews need only 1.
 
 The plan is written to `.claude/state/allocation.json` (drives the dashboard's planned-count
 display) and `docs/staffing.md` (human-readable record). `staffed-build.js` consumes it and

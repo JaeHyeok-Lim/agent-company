@@ -99,5 +99,12 @@
     "color": "#ab47bc",
     "model": "opus",
     "trait": "AppSec — threat-models and reviews for vulnerabilities; reports with severity."
+  },
+  "legal": {
+    "name": "Legal",
+    "emoji": "⚖️",
+    "color": "#5c6bc0",
+    "model": "opus",
+    "trait": "Compliance — licensing/IP/privacy/regulatory review; flags risks with severity + cited rule."
   }
 }

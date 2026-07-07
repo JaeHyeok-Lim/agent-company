@@ -11,6 +11,7 @@ export const meta = {
     { title: 'Ship', detail: 'devops: CI/CD, deploy, reliability' },
     { title: 'Review', detail: 'reviewers (adversarial)' },
     { title: 'Security', detail: 'security: threat-model + vulns' },
+    { title: 'Legal', detail: 'legal: licensing/IP/privacy/regulatory compliance' },
     { title: 'Data', detail: 'data-analyst: metrics & experiments' },
     { title: 'Document', detail: 'scribes in parallel' },
   ],
@@ -50,13 +51,13 @@ const ALLOCATION = {
 // collide. The chief-of-staff declares disjoint `ownedPaths` per instance; we
 // inject that boundary into each write-role prompt. Read-only roles (researcher,
 // architect, reviewer, security) don't get the boundary — they can't collide.
-const WRITE_ROLES = new Set(['product-manager', 'designer', 'implementer', 'devops', 'data-analyst', 'scribe'])
+const WRITE_ROLES = new Set(['product-manager', 'designer', 'implementer', 'devops', 'legal', 'data-analyst', 'scribe'])
 
 // 1) Your command → the manager allocates headcount across ALL roles (0 where not needed)
 phase('Staff')
 const plan = await agent(
   `Allocate headcount across the worker roles (product-manager, researcher, designer, architect, ` +
-  `implementer, devops, reviewer, security, data-analyst, scribe) for this goal. Use 0 where a ` +
+  `implementer, devops, reviewer, security, legal, data-analyst, scribe) for this goal. Use 0 where a ` +
   `role isn't needed (e.g. no UI → designer 0; no deploy → devops 0; internal tool → data 0). ` +
   `Allocate 2-4 where the work is large/parallelizable, bug-prone, or correctness-critical, and ` +
   `split it into one task slice per instance. For every WRITE role (product-manager, designer, ` +
@@ -134,10 +135,13 @@ const review = await staff('reviewer', 'Review',
 const sec = await staff('security', 'Security',
   (t) => `Threat-model and review for vulnerabilities (auth, input, secrets, deps). Slice: ${t}\n\nImplementation:\n${trim(built, 4000)}`)
 
+const legal = await staff('legal', 'Legal',
+  (t) => `Review the change for legal/licensing/IP/privacy/regulatory compliance (OSS license compatibility & attribution, IP/copyright provenance, PII/data-protection, ToS/regulatory). Flag risks with severity + a cited rule. You are NOT a lawyer — do compliance checks and escalate ambiguous/high-stakes/patent items to the user. Slice: ${t}\n\nImplementation:\n${trim(built, 4000)}`)
+
 const data = await staff('data-analyst', 'Data',
   (t) => `Define the metrics/events and any experiment to measure success. Slice: ${t}\n\nGoal:\n${goal}\n\nBrief:\n${trim(spec, 3000)}`)
 
 const docs = await staff('scribe', 'Document',
   (t) => `Document the result for the next reader. Slice: ${t}\n\nGoal:\n${goal}\n\nBuilt:\n${trim(built, 4000)}`)
 
-return { goal, allocation: plan.allocation, spec, research, ux, design, built, shipped, review, sec, data, docs }
+return { goal, allocation: plan.allocation, spec, research, ux, design, built, shipped, review, sec, legal, data, docs }

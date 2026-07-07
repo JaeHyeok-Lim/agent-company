@@ -36,7 +36,8 @@ agent-company/
    │   ├─ designer.md        # UX/UI: user flow, screens, usability
    │   ├─ devops.md          # ship & operate: CI/CD, deploy, infra, reliability
    │   ├─ data-analyst.md    # metrics, analysis, experiments
-   │   └─ security.md        # AppSec: threat-model + vulnerability review
+   │   ├─ security.md        # AppSec: threat-model + vulnerability review
+   │   └─ legal.md            # legal/licensing/IP/privacy/regulatory compliance (not legal advice)
    ├─ workflows/             # the "processes" — orchestration scripts
    │   ├─ go.js              # ⭐ the one command: staff → define → … → ship → review → document
    │   ├─ build-feature.js   # research → design → implement → review

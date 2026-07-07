@@ -13,7 +13,7 @@ const office = document.getElementById('office');
 const updated = document.getElementById('updated');
 const toggle = document.getElementById('viewToggle');
 const buildTag = document.getElementById('build');
-if (buildTag) buildTag.textContent = 'build · /go workflow bridge (synthetic instances)'; // bump to confirm a hard refresh loaded new code
+if (buildTag) buildTag.textContent = 'build · ⚖️ legal role added (15 roles)'; // bump to confirm a hard refresh loaded new code
 
 // ---- i18n (KO / EN) ----
 const langToggle = document.getElementById('langToggle');
@@ -41,16 +41,16 @@ const T = {
 };
 const t = (k, ...a) => { const v = T[LANG]?.[k]; return typeof v === 'function' ? v(...a) : (v ?? k); };
 const ROLE_NAME = {
-  ko: { ceo: '대표(You)', orchestrator: '총괄', 'chief-of-staff': '관리팀', 'product-manager': '기획팀', researcher: '조사팀', designer: '디자인팀', architect: '설계팀', implementer: '개발팀', devops: '데브옵스', reviewer: '검토팀', security: '보안팀', 'data-analyst': '데이터팀', scribe: '문서팀', auditor: '감사팀' },
-  en: { ceo: 'You (CEO)', orchestrator: 'Orchestrator', 'chief-of-staff': 'Management', 'product-manager': 'Product', researcher: 'Research', designer: 'Design', architect: 'Architecture', implementer: 'Engineering', devops: 'DevOps', reviewer: 'Review', security: 'Security', 'data-analyst': 'Data', scribe: 'Docs', auditor: 'Audit' },
+  ko: { ceo: '대표(You)', orchestrator: '총괄', 'chief-of-staff': '관리팀', 'product-manager': '기획팀', researcher: '조사팀', designer: '디자인팀', architect: '설계팀', implementer: '개발팀', devops: '데브옵스', reviewer: '검토팀', security: '보안팀', legal: '법무팀', 'data-analyst': '데이터팀', scribe: '문서팀', auditor: '감사팀' },
+  en: { ceo: 'You (CEO)', orchestrator: 'Orchestrator', 'chief-of-staff': 'Management', 'product-manager': 'Product', researcher: 'Research', designer: 'Design', architect: 'Architecture', implementer: 'Engineering', devops: 'DevOps', reviewer: 'Review', security: 'Security', legal: 'Legal', 'data-analyst': 'Data', scribe: 'Docs', auditor: 'Audit' },
 };
 const ROLE_ACTION = {
-  ko: { ceo: '지시', orchestrator: '총괄', 'chief-of-staff': '업무 배정', 'product-manager': '요구사항 정의', researcher: '자료 조사', designer: 'UX 설계', architect: '설계', implementer: '개발', devops: '배포·인프라', reviewer: '검토', security: '보안 점검', 'data-analyst': '데이터 분석', scribe: '문서화', auditor: '점검' },
-  en: { ceo: 'directing', orchestrator: 'coordinating', 'chief-of-staff': 'assigning', 'product-manager': 'defining specs', researcher: 'researching', designer: 'designing UX', architect: 'architecting', implementer: 'building', devops: 'deploying', reviewer: 'reviewing', security: 'security review', 'data-analyst': 'analyzing', scribe: 'writing docs', auditor: 'auditing' },
+  ko: { ceo: '지시', orchestrator: '총괄', 'chief-of-staff': '업무 배정', 'product-manager': '요구사항 정의', researcher: '자료 조사', designer: 'UX 설계', architect: '설계', implementer: '개발', devops: '배포·인프라', reviewer: '검토', security: '보안 점검', legal: '법률·규정 검토', 'data-analyst': '데이터 분석', scribe: '문서화', auditor: '점검' },
+  en: { ceo: 'directing', orchestrator: 'coordinating', 'chief-of-staff': 'assigning', 'product-manager': 'defining specs', researcher: 'researching', designer: 'designing UX', architect: 'architecting', implementer: 'building', devops: 'deploying', reviewer: 'reviewing', security: 'security review', legal: 'compliance review', 'data-analyst': 'analyzing', scribe: 'writing docs', auditor: 'auditing' },
 };
 const OUTPUT = { // the abstract thing a sender hands off (shown on the plane)
-  ko: { ceo: '지시', orchestrator: '지시', 'chief-of-staff': '업무 배정', 'product-manager': '요구사항', researcher: '조사 결과', designer: '디자인 시안', architect: '설계안', implementer: '구현물', devops: '배포본', reviewer: '검토 의견', security: '보안 검토', 'data-analyst': '분석 결과', scribe: '문서', auditor: '개선 제안' },
-  en: { ceo: 'brief', orchestrator: 'brief', 'chief-of-staff': 'assignment', 'product-manager': 'spec', researcher: 'findings', designer: 'mockups', architect: 'design', implementer: 'build', devops: 'release', reviewer: 'review', security: 'sec review', 'data-analyst': 'analysis', scribe: 'docs', auditor: 'proposal' },
+  ko: { ceo: '지시', orchestrator: '지시', 'chief-of-staff': '업무 배정', 'product-manager': '요구사항', researcher: '조사 결과', designer: '디자인 시안', architect: '설계안', implementer: '구현물', devops: '배포본', reviewer: '검토 의견', security: '보안 검토', legal: '법률 검토', 'data-analyst': '분석 결과', scribe: '문서', auditor: '개선 제안' },
+  en: { ceo: 'brief', orchestrator: 'brief', 'chief-of-staff': 'assignment', 'product-manager': 'spec', researcher: 'findings', designer: 'mockups', architect: 'design', implementer: 'build', devops: 'release', reviewer: 'review', security: 'sec review', legal: 'compliance memo', 'data-analyst': 'analysis', scribe: 'docs', auditor: 'proposal' },
 };
 function roleName(role) { return ROLE_NAME[LANG]?.[role] || roster[role]?.name || role; }
 function roleAction(role) { return ROLE_ACTION[LANG]?.[role] || ''; }
@@ -92,13 +92,14 @@ const ROOMS = {
   reviewer:          { x: 1.5, y: 74,  w: 22, h: 22 },
   security:          { x: 25,  y: 74,  w: 23, h: 22 },
   scribe:            { x: 50,  y: 74,  w: 23, h: 22 },
+  legal:             { x: 74.5, y: 74, w: 22, h: 22 },
 };
 
 // pipeline order for "done → next" handoff planes (full product flow)
 const NEXT = {
   'product-manager': 'researcher', researcher: 'designer', designer: 'architect',
   architect: 'implementer', implementer: 'devops', devops: 'reviewer', reviewer: 'security',
-  security: 'scribe', scribe: 'orchestrator', 'data-analyst': 'orchestrator', 'chief-of-staff': 'orchestrator',
+  security: 'legal', legal: 'scribe', scribe: 'orchestrator', 'data-analyst': 'orchestrator', 'chief-of-staff': 'orchestrator',
 };
 const ENTRY = new Set(['product-manager', 'chief-of-staff', 'researcher']);
 // per-department floor textures (kept; the clutter prop icons were removed)
